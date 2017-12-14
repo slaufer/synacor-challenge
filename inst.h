@@ -24,6 +24,7 @@ void instruction_and (execstate*, instruction*); // 12
 void instruction_or  (execstate*, instruction*); // 13
 void instruction_not (execstate*, instruction*); // 14
 void instruction_rmem(execstate*, instruction*); // 15
+void instruction_wmem(execstate*, instruction*); // 16
 void instruction_call(execstate*, instruction*); // 17
 void instruction_ret (execstate*, instruction*); // 18
 void instruction_out (execstate*, instruction*); // 19
@@ -46,7 +47,7 @@ void (*INST_FNS[])(execstate*, instruction*) = {
 	instruction_or,   // opcode 13: or
 	instruction_not,  // opcode 14: not
 	instruction_rmem, // opcode 15: rmem
-	instruction_halt, // opcode 16: wmem
+	instruction_wmem, // opcode 16: wmem
 	instruction_call, // opcode 17: call
 	instruction_ret,  // opcode 18: ret
 	instruction_out,  // opcode 19: out

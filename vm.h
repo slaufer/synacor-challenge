@@ -4,14 +4,16 @@
 #include "const.h"
 
 // macros for moving program pointer
-#define ADVANCE_PP(state, inst) state->pp += (INST_NARGS[inst->opcode] + 1) * BIN_FIELD_WIDTH
-#define SET_PP(state, pos) state->pp = state->prog->bin + pos * BIN_FIELD_WIDTH
+#define SET_PP(state, pos) state->pp = state->prog->bin + pos * BIN_FIELD_WIDTH;
+#define GET_PP(state) ((uint16_t) (state->pp - state->prog->bin) / BIN_FIELD_WIDTH)
+#define NEXT_PP(state, inst) (GET_PP(state) + INST_NARGS[inst->opcode] + 1)
+#define ADVANCE_PP(state, inst) state->pp = SET_PP(state, NEXT_PP(state, inst));
 
 // macros for heap
-#define HEAP_PTR(state, addr) (state->heap + addr * BIN_FIELD_WIDTH)
-#define GET_HEAP(state, addr) GET_MEM(HEAP_PTR(state, addr)) // get reg value as uint16_t
-#define SET_HEAP(state, addr, val) SET_MEM(HEAP_PTR(state, addr), val)
-#define CPY_HEAP(state, addr, val_ptr) CPY_MEM(HEAP_PTR(state, addr), val_ptr)
+#define PROG_PTR(state, addr) (state->prog->bin + addr * BIN_FIELD_WIDTH)
+#define GET_PROG(state, addr) GET_MEM(PROG_PTR(state, addr))
+#define SET_PROG(state, addr, val) SET_MEM(PROG_PTR(state, addr), val)
+#define CPY_PROG(state, addr, val_ptr) CPY_MEM(PROG_PTR(state, addr), val_ptr)
 
 // macros for interacting with memory
 #define GET_MEM(src_ptr) (uint16_t) (src_ptr[0] + (uint16_t) 256 * src_ptr[1])
@@ -29,10 +31,10 @@
 #define CPY_REG(state, reg, val_ptr) CPY_MEM(REG_PTR(state, reg), val_ptr)
 
 // macros for interacting with stack
-#define STACK_PUSH(state, val) SET_MEM(state->sp, INTERP_VALUE(state, val)); state->sp += BIN_FIELD_WIDTH;
+#define STACK_PUSH(state, val) SET_MEM(state->sp, TRY_REG(state, val)); state->sp += BIN_FIELD_WIDTH;
 #define STACK_POP(state, dst_ptr) state->sp -= BIN_FIELD_WIDTH; CPY_MEM(dst_ptr, state->sp);
 
 // macro for possibly getting register contents
-#define INTERP_VALUE(state, val) (val < REG_BOTTOM ? val : GET_REG(state, val))
+#define TRY_REG(state, val) (val < REG_BOTTOM ? val : GET_REG(state, val))
 
 #endif

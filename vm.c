@@ -21,9 +21,8 @@ execstate *init_execstate(program *prog) {
 	state->stack = malloc(HEAP_SIZE * BIN_FIELD_WIDTH);
 	state->sp = state->stack;
 
-	state->heap = malloc(HEAP_SIZE * BIN_FIELD_WIDTH);
-	state->heap_size = HEAP_SIZE;
-	memset(state->heap, 0, HEAP_SIZE * BIN_FIELD_WIDTH);
+	state->heap = prog->bin;
+	state->heap_size = prog->sz;
 
 	state->regs = malloc(REGS_SIZE * BIN_FIELD_WIDTH);
 	state->regs_size = REGS_SIZE;
