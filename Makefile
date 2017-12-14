@@ -1,10 +1,12 @@
 CC=gcc
-CFLAGS=
 OBJECTS=vm.o inst.o
+BINARY=scvm
 
 %.o: %.c 
-	$(CC) -c -o $@ $< $(CFLAGS)
+	$(CC) -c -o $@ $< ${CFLAGS}
 
 default: $(OBJECTS)
-	$(CC) -o vm $(OBJECTS) $(CFLAGS)
-	
+	$(CC) -o $(BINARY) $(OBJECTS) ${CFLAGS}
+
+clean:
+	rm -f $(BINARY) $(OBJECTS)
