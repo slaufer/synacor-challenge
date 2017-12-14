@@ -40,7 +40,9 @@ void get_instruction(execstate *state, instruction *inst) {
 	inst->args = state->pp + BIN_FIELD_WIDTH;
 
 	#ifdef CORE_DEBUG
-	printf("INSTRUCTION PP=%x OPCODE=%d NARGS=%d ARGS=%d,%d,%d\n", state->pp, inst->opcode, INST_NARGS[inst->opcode], inst->args[0], inst->args[1], inst->args[2]);
+	printf("INSTRUCTION PP=%d OPCODE=%d NARGS=%d ARGS=%d,%d,%d\n",
+		(uint64_t) (state->pp - state->prog->bin) / BIN_FIELD_WIDTH,
+		inst->opcode, INST_NARGS[inst->opcode], inst->args[0], inst->args[1], inst->args[2]);
 	#endif
 }
 

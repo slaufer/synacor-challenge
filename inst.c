@@ -23,7 +23,7 @@ void instruction_halt(execstate *state, instruction *inst) {
 		printf("\n=== HALT ===\n");
 	} else {
 		printf("\n=== HALT UNIMPLEMENTED OPCODE=%d NARGS=%d ARGS=%d,%d,%d ===\n",
-			inst->opcode, INST_NARGS[inst->opcode], inst->args[0], inst->args[1], inst->args[2]);
+			inst->opcode, INST_NARGS[inst->opcode], GET_ARG(inst, 0), GET_ARG(inst, 1), GET_ARG(inst, 2));
 	}
 
 	// don't bother doing anything else, just exit
@@ -58,7 +58,7 @@ void instruction_push(execstate *state, instruction *inst) {
  * instruction_pop - services opcode 3 (pop)
  */
 void instruction_pop(execstate *state, instruction *inst) {
-	#if defined(INST_DEBUG) || defined(INST_SET_DEBUG) || defined(STACK_DEBUG)
+	#if defined(INST_DEBUG) || defined(INST_POP_DEBUG) || defined(STACK_DEBUG)
 	printf("POP %d\n", GET_ARG(inst, 0));
 	#endif
 
@@ -83,7 +83,7 @@ void instruction_eq(execstate *state, instruction *inst) {
  * instruction_gt - services opcode 5 (gt)
  */
 void instruction_gt(execstate *state, instruction *inst) {
-	#if defined(INST_DEBUG) || defined(INST_SET_DEBUG) || defined(COMP_DEBUG)
+	#if defined(INST_DEBUG) || defined(INST_GT_DEBUG) || defined(COMP_DEBUG)
 	printf("GT %d %d %d\n", GET_ARG(inst, 0), GET_ARG(inst, 1), GET_ARG(inst, 2));
 	#endif
 
@@ -163,7 +163,7 @@ void instruction_and(execstate *state, instruction *inst) {
  * instruction_or - services opcode 13, or
  */
 void instruction_or(execstate *state, instruction *inst) {
-	#if defined(INST_DEBUG) || defined(INST_AND_DEBUG) || defined(BITWISE_DEBUG)
+	#if defined(INST_DEBUG) || defined(INST_OR_DEBUG) || defined(BITWISE_DEBUG)
 	printf("OR %d %d %d\n", GET_ARG(inst, 0), GET_ARG(inst, 1), GET_ARG(inst, 2));
 	#endif
 
@@ -176,7 +176,7 @@ void instruction_or(execstate *state, instruction *inst) {
  * instruction_not - services opcode 14, not
  */
 void instruction_not(execstate *state, instruction *inst) {
-	#if defined(INST_DEBUG) || defined(INST_AND_DEBUG) || defined(BITWISE_DEBUG)
+	#if defined(INST_DEBUG) || defined(INST_NOT_DEBUG) || defined(BITWISE_DEBUG)
 	printf("NOT %d %d\n", GET_ARG(inst, 0), GET_ARG(inst, 1));
 	#endif
 
@@ -186,10 +186,40 @@ void instruction_not(execstate *state, instruction *inst) {
 }
 
 /*
+ * instruction_call - services opcode 17, call
+ */
+void instruction_call(execstate *state, instruction *inst) {
+	#if defined(INST_DEBUG) || defined(INST_CALL_DEBUG) || defined(JMP_DEBUG)
+	printf("CALL %d\n", GET_ARG(inst, 0));
+	#endif
+
+	uint16_t old_pp = (state->pp - state->prog->bin + BIN_FIELD_WIDTH * 2) / BIN_FIELD_WIDTH;
+	STACK_PUSH(state, old_pp);
+	SET_PP(state, INTERP_VALUE(state, GET_ARG(inst, 0)));
+}
+
+/*
+ * instruction_ret - services opcode 18, ret
+ */
+void instruction_ret(execstate *state, instruction *inst) {
+	#if defined(INST_DEBUG) || defined(INST_RET_DEBUG) || defined(JMP_DEBUG)
+	printf("RET %d\n", GET_ARG(inst, 0));
+	#endif
+
+	if (state->sp == state->stack) {
+		instruction_halt(state, inst);
+	}
+
+	STACK_POP(state, REG_PTR(state, GET_ARG(inst, 0)))
+	uint16_t new_pp = state->prog->bin + (GET_ARG(inst, 0) + BIN_FIELD_WIDTH) * 2;
+	SET_PP(state, new_pp);
+}
+
+/*
  * instruction_out - services opcode 19, out
  */
 void instruction_out(execstate *state, instruction *inst) {
-	#if defined(INST_DEBUG) || defined(INST_OUT_DEBUG)
+	#if defined(INST_DEBUG) || defined(INST_OUT_DEBUG) || defined(IO_DEBUG)
 	printf("OUT %d\n", GET_ARG(inst, 0));
 	#endif
 
