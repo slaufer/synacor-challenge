@@ -1,12 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "inst.h"
+#include "vm.h"
 
 
 // methods to service individual instructions
 void (*INST_FNS[])(execstate*, instruction*) = {
 	inst_halt, // opcode 0: halt
-	inst_halt, // opcode 1: set
+	inst_set, // opcode 1: set
 	inst_halt, // opcode 2: push
 	inst_halt, // opcode 3: pop
 	inst_halt, // opcode 4: eq
@@ -62,8 +63,26 @@ uint8_t INST_NARGS[] = {
 instruction *init_instruction() {
 	instruction *inst = malloc(sizeof(instruction));
 	inst->opcode = 0;
-	inst->args = (uint16_t*) malloc(sizeof(uint16_t) * INST_MAX_ARGS); // room for up to 3 args
+	inst->args = 0;
 	inst->nargs = 0;
+}
+
+/*
+ * interp_value - interprets a value, and either returns a literal or a register value
+ * param state - execution state object
+ * param value - value to interpret
+ */
+
+uint16_t interp_value(execstate *state, uint16_t value) {
+
+	if (value < 32768)  {
+		return value;
+	} else if (value < 32776) {
+		#ifdef INTERP_DEBUG
+			printf("INTERP %hu => %hu\n", value, GET_REG(state, value));
+		#endif
+		return GET_REG(state, value);
+	}
 }
 
 /*
@@ -83,29 +102,45 @@ void inst_halt(execstate *state, instruction *inst) {
 };
 
 /*
+ * inst_set - services opcode 1 (set)
+ */
+void inst_set(execstate *state, instruction *inst) {
+		#if defined(INST_DEBUG) || defined(INST_SET_DEBUG) || defined(REG_DEBUG)
+		printf("SET %d %d\n", GET_ARG(inst, 0), GET_ARG(inst, 1));
+		#endif
+		SET_REG(state, GET_ARG(inst, 0), ARG_PTR(inst, 1));
+		ADVANCE_PP(state, inst);
+};
+
+/*
  * inst_jmp - services opcode 6, jmp
  */
 void inst_jmp(execstate *state, instruction *inst) {
-	#if defined(INST_DEBUG) || defined(INST_JMP_DEBUG)
+	#if defined(INST_DEBUG) || defined(INST_JMP_DEBUG) || defined(JMP_DEBUG)
 	printf("JMP %d (0x%08x => 0x%08x)\n",
-		inst->args[0], state->pp, state->prog->bin + inst->args[0] * BIN_FIELD_WIDTH);
+		GET_ARG(inst, 0) , state->pp, state->prog->bin + GET_ARG(inst, 1) * BIN_FIELD_WIDTH);
 	#endif
 
+	uint16_t target = interp_value(state, GET_ARG(inst, 0));
+
 	// new program pointer is base program memory pointer + jump location argument * field width
-	SET_PP(state, inst->args[0]);
+	SET_PP(state, target);
 }
 
 /*
  * inst_jt - services opcode 7, jt
  */
 void inst_jt(execstate *state, instruction *inst) {
-	#if defined(INST_DEBUG) || defined(INST_JT_DEBUG)
+	#if defined(INST_DEBUG) || defined(INST_JT_DEBUG) || defined(JMP_DEBUG)
 	printf("JT %d %d (0x%08x => 0x%08x)\n",
 		inst->args[0], inst->args[1], state->pp, state->prog->bin + inst->args[1] * BIN_FIELD_WIDTH);
 	#endif
 
-	if (inst->args[0]) {
-		SET_PP(state, inst->args[1]);
+	uint16_t cond = interp_value(state, GET_ARG(inst, 0));
+	uint16_t target = interp_value(state, GET_ARG(inst,1));
+
+	if (cond) {
+		SET_PP(state, target);
 	} else {
 		ADVANCE_PP(state, inst);
 	}
@@ -115,13 +150,16 @@ void inst_jt(execstate *state, instruction *inst) {
  * inst_jf - services opcode 8, jf
  */
 void inst_jf(execstate *state, instruction *inst) {
-	#if defined(INST_DEBUG) || defined(INST_JF_DEBUG)
+	#if defined(INST_DEBUG) || defined(INST_JF_DEBUG) || defined(JMP_DEBUG)
 	printf("JF %d %d (0x%08x => 0x%08x)\n",
 		inst->args[0], inst->args[1], state->pp, state->prog->bin + inst->args[1] * BIN_FIELD_WIDTH);
 	#endif
 
-	if (inst->args[0] == 0) {
-		SET_PP(state, inst->args[1]);
+	uint16_t cond = interp_value(state, GET_ARG(inst, 0));
+	uint16_t target = interp_value(state, GET_ARG(inst,1));
+
+	if (cond == 0) {
+		SET_PP(state, target);
 	} else {
 		ADVANCE_PP(state, inst);
 	}
@@ -132,7 +170,7 @@ void inst_jf(execstate *state, instruction *inst) {
  */
 void inst_out(execstate *state, instruction *inst) {
 	#if defined(INST_DEBUG) || defined(INST_OUT_DEBUG)
-	printf("OUT %d\n", inst->args[0]);
+	printf("OUT %d\n", GET_ARG(inst, 0));
 	#endif
 
 	printf("%c", inst->args[0]);
