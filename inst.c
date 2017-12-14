@@ -6,7 +6,6 @@
 
 // methods to service individual instructions
 void (*INST_FNS[])(execstate*, instruction*) = {
-<<<<<<< HEAD
 	instruction_halt, // opcode 0: halt
 	instruction_set, // opcode 1: set
 	instruction_halt, // opcode 2: push
@@ -29,30 +28,6 @@ void (*INST_FNS[])(execstate*, instruction*) = {
 	instruction_out, // opcode 19: out
 	instruction_halt, // opcode 20: in
 	instruction_noop, // opcode 21: noop
-=======
-	inst_halt, // opcode 0: halt
-	inst_set, // opcode 1: set
-	inst_halt, // opcode 2: push
-	inst_halt, // opcode 3: pop
-	inst_halt, // opcode 4: eq
-	inst_halt, // opcode 5: gt
-	inst_jmp, // opcode 6: jmp
-	inst_jt, // opcode 7: jt
-	inst_jf, // opcode 8: jf
-	inst_halt, // opcode 9: add
-	inst_halt, // opcode 10: mult
-	inst_halt, // opcode 11: mod
-	inst_halt, // opcode 12: and
-	inst_halt, // opcode 13: or
-	inst_halt, // opcode 14: mod
-	inst_halt, // opcode 15: rmem
-	inst_halt, // opcode 16: wmem
-	inst_halt, // opcode 17: call
-	inst_halt, // opcode 18: ret
-	inst_out, // opcode 19: out
-	inst_halt, // opcode 20: in
-	inst_noop, // opcode 21: noop
->>>>>>> 5f6a9b09f9cb0817ecafb55a727f693c2ee28894
 };
 
 // argument counts for instructions
@@ -111,11 +86,7 @@ uint16_t interp_value(execstate *state, uint16_t value) {
 }
 
 /*
-<<<<<<< HEAD
  * instruction_halt - services opcode 0 (halt)
-=======
- * inst_halt - services opcode 0 (halt)
->>>>>>> 5f6a9b09f9cb0817ecafb55a727f693c2ee28894
  *             also used for unknown opcodes
  */
 void instruction_halt(execstate *state, instruction *inst) {
@@ -131,15 +102,9 @@ void instruction_halt(execstate *state, instruction *inst) {
 };
 
 /*
-<<<<<<< HEAD
  * instruction_set - services opcode 1 (set)
  */
 void instruction_set(execstate *state, instruction *inst) {
-=======
- * inst_set - services opcode 1 (set)
- */
-void inst_set(execstate *state, instruction *inst) {
->>>>>>> 5f6a9b09f9cb0817ecafb55a727f693c2ee28894
 		#if defined(INST_DEBUG) || defined(INST_SET_DEBUG) || defined(REG_DEBUG)
 		printf("SET %d %d\n", GET_ARG(inst, 0), GET_ARG(inst, 1));
 		#endif
@@ -148,15 +113,9 @@ void inst_set(execstate *state, instruction *inst) {
 };
 
 /*
-<<<<<<< HEAD
  * instruction_jmp - services opcode 6, jmp
  */
 void instruction_jmp(execstate *state, instruction *inst) {
-=======
- * inst_jmp - services opcode 6, jmp
- */
-void inst_jmp(execstate *state, instruction *inst) {
->>>>>>> 5f6a9b09f9cb0817ecafb55a727f693c2ee28894
 	#if defined(INST_DEBUG) || defined(INST_JMP_DEBUG) || defined(JMP_DEBUG)
 	printf("JMP %d (0x%08x => 0x%08x)\n",
 		GET_ARG(inst, 0) , state->pp, state->prog->bin + GET_ARG(inst, 1) * BIN_FIELD_WIDTH);
@@ -171,11 +130,7 @@ void inst_jmp(execstate *state, instruction *inst) {
 /*
  * instruction_jt - services opcode 7, jt
  */
-<<<<<<< HEAD
 void instruction_jt(execstate *state, instruction *inst) {
-=======
-void inst_jt(execstate *state, instruction *inst) {
->>>>>>> 5f6a9b09f9cb0817ecafb55a727f693c2ee28894
 	#if defined(INST_DEBUG) || defined(INST_JT_DEBUG) || defined(JMP_DEBUG)
 	printf("JT %d %d (0x%08x => 0x%08x)\n",
 		GET_ARG(inst, 0), GET_ARG(inst, 1), state->pp, state->prog->bin + GET_ARG(inst, 1) * BIN_FIELD_WIDTH);
@@ -194,11 +149,7 @@ void inst_jt(execstate *state, instruction *inst) {
 /*
  * instruction_jf - services opcode 8, jf
  */
-<<<<<<< HEAD
 void instruction_jf(execstate *state, instruction *inst) {
-=======
-void inst_jf(execstate *state, instruction *inst) {
->>>>>>> 5f6a9b09f9cb0817ecafb55a727f693c2ee28894
 	#if defined(INST_DEBUG) || defined(INST_JF_DEBUG) || defined(JMP_DEBUG)
 	printf("JF %d %d (0x%08x => 0x%08x)\n",
 		inst->args[0], inst->args[1], state->pp, state->prog->bin + inst->args[1] * BIN_FIELD_WIDTH);
