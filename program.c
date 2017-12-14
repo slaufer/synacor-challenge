@@ -2,7 +2,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include "program.h"
+#include "struct.h"
 
 /*
  * init_program - creates a program object from a file on disk

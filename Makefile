@@ -1,5 +1,5 @@
 CC=gcc
-OBJECTS=vm.o inst.o program.o
+OBJECTS=vm.o inst.o program.o const.o
 BINARY=scvm
 
 %.o: %.c 

@@ -2,10 +2,11 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include "const.h"
+#include "struct.h"
 #include "vm.h"
 #include "inst.h"
 #include "program.h"
-#include "hexdump.h"
 
 /*
  * init_execstate - creates a program execution state
@@ -17,8 +18,8 @@ execstate *init_execstate(program *prog) {
 	state->prog = prog;
 	state->pp = prog->bin;
 
-	state->stack = NULL;
-	state->sp = 0;
+	state->stack = malloc(HEAP_SIZE * BIN_FIELD_WIDTH);
+	state->sp = state->stack;
 
 	state->heap = malloc(HEAP_SIZE * BIN_FIELD_WIDTH);
 	state->heap_size = HEAP_SIZE;
@@ -35,12 +36,11 @@ execstate *init_execstate(program *prog) {
  * param inst - pointer to an instruction object to be filled out
  */
 void get_instruction(execstate *state, instruction *inst) {
-	inst->opcode = GET_VALUE(state->pp);
-	inst->nargs = INST_NARGS[inst->opcode];
+	inst->opcode = GET_MEM(state->pp);
 	inst->args = state->pp + BIN_FIELD_WIDTH;
 
-	#ifdef VM_DEBUG
-	printf("GET_INSTRUCTION PP=%x OPCODE=%d NARGS=%d ARGS=%d,%d,%d\n", state->pp, inst->opcode, inst->nargs, inst->args[0], inst->args[1], inst->args[2]);
+	#ifdef CORE_DEBUG
+	printf("INSTRUCTION PP=%x OPCODE=%d NARGS=%d ARGS=%d,%d,%d\n", state->pp, inst->opcode, INST_NARGS[inst->opcode], inst->args[0], inst->args[1], inst->args[2]);
 	#endif
 }
 
