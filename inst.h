@@ -31,6 +31,7 @@ extern uint8_t INST_NARGS[];
 instruction *init_instruction();
 
 // argument service function declarations
+<<<<<<< HEAD
 void instruction_halt(execstate*, instruction*); //  0
 void instruction_set (execstate*, instruction*); //  1
 void instruction_jmp (execstate*, instruction*); //  6
@@ -39,5 +40,14 @@ void instruction_jf  (execstate*, instruction*); //  8
 void instruction_add (execstate*, instruction*); //  9
 void instruction_out (execstate*, instruction*); // 19
 void instruction_noop(execstate*, instruction*); // 21
+=======
+void inst_halt(execstate*, instruction*); //  0
+void inst_set (execstate*, instruction*); //  1
+void inst_jmp (execstate*, instruction*); //  6
+void inst_jt  (execstate*, instruction*); //  7
+void inst_jf  (execstate*, instruction*); //  8
+void inst_out (execstate*, instruction*); // 19
+void inst_noop(execstate*, instruction*); // 21
+>>>>>>> 5f6a9b09f9cb0817ecafb55a727f693c2ee28894
 
 #endif
