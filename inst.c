@@ -18,10 +18,17 @@ instruction *init_instruction() {
  * instruction_debug - prints some information on an instruction and its arguments
  */
 instruction_debug(execstate *state, instruction *inst) {
-	printf("%5hu  %2hu %-4s ", (state->pp - state->prog->bin) / BIN_FIELD_WIDTH, inst->opcode, INST_NAME[inst->opcode]);
-	char* buf[256];
-
 	int i;
+	#ifdef REG_DEBUG
+	for (i = 0; i < REGS_SIZE; i++) {
+		printf("R%d:%5hu  ", i, GET_REG(state, i + REG_BOTTOM));
+	}
+	printf("\n");
+	#endif
+
+	printf("%5hu  %2hu %-4s ", (state->pp - state->prog->bin) / BIN_FIELD_WIDTH, inst->opcode, INST_NAME[inst->opcode]);
+	char* buf[256];	
+
 	for (i = 0; i < INST_NARGS[inst->opcode]; i++) {
 		uint16_t arg = GET_ARG(inst, i);
 		uint16_t arg_i = TRY_REG(state, arg);
@@ -34,13 +41,6 @@ instruction_debug(execstate *state, instruction *inst) {
 	}
 	
 	printf("\n");
-	
-	#ifdef REG_DEBUG
-	for (i = 0; i < REGS_SIZE; i++) {
-		printf("R%d:%5hu  ", i, GET_REG(state, i + REG_BOTTOM));
-	}
-	printf("\n");
-	#endif
 }
 
 /*
@@ -71,13 +71,16 @@ void instruction_halt(execstate *state, instruction *inst) {
 
 /*
  * instruction_set - services opcode 1 (set)
+ * set register <a> to the value of <b>
  */
 void instruction_set(execstate *state, instruction *inst) {
 	#if defined(INST_DEBUG) || defined(INST_SET_DEBUG) || defined(REG_DEBUG)
 	instruction_debug(state, inst);
 	#endif
 
-	CPY_REG(state, GET_ARG(inst, 0), ARG_PTR(inst, 1));
+	
+
+	SET_REG(state, GET_ARG(inst, 0), TRY_REG(state, GET_ARG(inst, 1)));
 	ADVANCE_PP(state, inst);
 };
 
