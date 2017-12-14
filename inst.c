@@ -6,28 +6,28 @@
 
 // methods to service individual instructions
 void (*INST_FNS[])(execstate*, instruction*) = {
-	inst_halt, // opcode 0: halt
-	inst_set, // opcode 1: set
-	inst_halt, // opcode 2: push
-	inst_halt, // opcode 3: pop
-	inst_halt, // opcode 4: eq
-	inst_halt, // opcode 5: gt
-	inst_jmp, // opcode 6: jmp
-	inst_jt, // opcode 7: jt
-	inst_jf, // opcode 8: jf
-	inst_halt, // opcode 9: add
-	inst_halt, // opcode 10: mult
-	inst_halt, // opcode 11: mod
-	inst_halt, // opcode 12: and
-	inst_halt, // opcode 13: or
-	inst_halt, // opcode 14: mod
-	inst_halt, // opcode 15: rmem
-	inst_halt, // opcode 16: wmem
-	inst_halt, // opcode 17: call
-	inst_halt, // opcode 18: ret
-	inst_out, // opcode 19: out
-	inst_halt, // opcode 20: in
-	inst_noop, // opcode 21: noop
+	instruction_halt, // opcode 0: halt
+	instruction_set, // opcode 1: set
+	instruction_halt, // opcode 2: push
+	instruction_halt, // opcode 3: pop
+	instruction_halt, // opcode 4: eq
+	instruction_halt, // opcode 5: gt
+	instruction_jmp, // opcode 6: jmp
+	instruction_jt, // opcode 7: jt
+	instruction_jf, // opcode 8: jf
+	instruction_add, // opcode 9: add
+	instruction_halt, // opcode 10: mult
+	instruction_halt, // opcode 11: mod
+	instruction_halt, // opcode 12: and
+	instruction_halt, // opcode 13: or
+	instruction_halt, // opcode 14: mod
+	instruction_halt, // opcode 15: rmem
+	instruction_halt, // opcode 16: wmem
+	instruction_halt, // opcode 17: call
+	instruction_halt, // opcode 18: ret
+	instruction_out, // opcode 19: out
+	instruction_halt, // opcode 20: in
+	instruction_noop, // opcode 21: noop
 };
 
 // argument counts for instructions
@@ -86,10 +86,10 @@ uint16_t interp_value(execstate *state, uint16_t value) {
 }
 
 /*
- * inst_halt - services opcode 0 (halt)
+ * instruction_halt - services opcode 0 (halt)
  *             also used for unknown opcodes
  */
-void inst_halt(execstate *state, instruction *inst) {
+void instruction_halt(execstate *state, instruction *inst) {
 	if (inst->opcode == 0) {
 		printf("\n=== HALT ===\n");
 	} else {
@@ -102,9 +102,9 @@ void inst_halt(execstate *state, instruction *inst) {
 };
 
 /*
- * inst_set - services opcode 1 (set)
+ * instruction_set - services opcode 1 (set)
  */
-void inst_set(execstate *state, instruction *inst) {
+void instruction_set(execstate *state, instruction *inst) {
 		#if defined(INST_DEBUG) || defined(INST_SET_DEBUG) || defined(REG_DEBUG)
 		printf("SET %d %d\n", GET_ARG(inst, 0), GET_ARG(inst, 1));
 		#endif
@@ -113,9 +113,9 @@ void inst_set(execstate *state, instruction *inst) {
 };
 
 /*
- * inst_jmp - services opcode 6, jmp
+ * instruction_jmp - services opcode 6, jmp
  */
-void inst_jmp(execstate *state, instruction *inst) {
+void instruction_jmp(execstate *state, instruction *inst) {
 	#if defined(INST_DEBUG) || defined(INST_JMP_DEBUG) || defined(JMP_DEBUG)
 	printf("JMP %d (0x%08x => 0x%08x)\n",
 		GET_ARG(inst, 0) , state->pp, state->prog->bin + GET_ARG(inst, 1) * BIN_FIELD_WIDTH);
@@ -128,12 +128,12 @@ void inst_jmp(execstate *state, instruction *inst) {
 }
 
 /*
- * inst_jt - services opcode 7, jt
+ * instruction_jt - services opcode 7, jt
  */
-void inst_jt(execstate *state, instruction *inst) {
+void instruction_jt(execstate *state, instruction *inst) {
 	#if defined(INST_DEBUG) || defined(INST_JT_DEBUG) || defined(JMP_DEBUG)
 	printf("JT %d %d (0x%08x => 0x%08x)\n",
-		inst->args[0], inst->args[1], state->pp, state->prog->bin + inst->args[1] * BIN_FIELD_WIDTH);
+		GET_ARG(inst, 0), GET_ARG(inst, 1), state->pp, state->prog->bin + GET_ARG(inst, 1) * BIN_FIELD_WIDTH);
 	#endif
 
 	uint16_t cond = interp_value(state, GET_ARG(inst, 0));
@@ -147,9 +147,9 @@ void inst_jt(execstate *state, instruction *inst) {
 }
 
 /*
- * inst_jf - services opcode 8, jf
+ * instruction_jf - services opcode 8, jf
  */
-void inst_jf(execstate *state, instruction *inst) {
+void instruction_jf(execstate *state, instruction *inst) {
 	#if defined(INST_DEBUG) || defined(INST_JF_DEBUG) || defined(JMP_DEBUG)
 	printf("JF %d %d (0x%08x => 0x%08x)\n",
 		inst->args[0], inst->args[1], state->pp, state->prog->bin + inst->args[1] * BIN_FIELD_WIDTH);
@@ -166,23 +166,40 @@ void inst_jf(execstate *state, instruction *inst) {
 }
 
 /*
- * inst_out - services opcode 19, out
+ * instruction_add - services opcode 9, add
  */
-void inst_out(execstate *state, instruction *inst) {
+void instruction_add(execstate *state, instruction *inst) {
+	#if defined(INST_DEBUG) || defined(INST_ADD_DEBUG) || defined(MATH_DEBUG)
+	printf("ADD %d %d %d\n", GET_ARG(inst, 0), GET_ARG(inst, 1), GET_ARG(inst, 2));
+	#endif
+
+	uint8_t *result_buf = malloc(BIN_FIELD_WIDTH);
+	uint16_t result = (GET_ARG(inst, 1) + GET_ARG(inst, 2)) % MATH_MOD;
+	
+	SET_VALUE(result_buf, result);
+	SET_REG(state, GET_ARG(inst, 0), &result_buf);
+
+	ADVANCE_PP(state, inst);
+}
+
+/*
+ * instruction_out - services opcode 19, out
+ */
+void instruction_out(execstate *state, instruction *inst) {
 	#if defined(INST_DEBUG) || defined(INST_OUT_DEBUG)
 	printf("OUT %d\n", GET_ARG(inst, 0));
 	#endif
 
-	printf("%c", inst->args[0]);
+	printf("%c", GET_ARG(inst, 0));
 
 	// advance program pointer
 	ADVANCE_PP(state, inst);
 }
 
 /*
- * inst_noop - services opcode 21, noop
+ * instruction_noop - services opcode 21, noop
  */
-void inst_noop(execstate *state, instruction *inst) {
+void instruction_noop(execstate *state, instruction *inst) {
 	#if defined(INST_DEBUG) || defined(INST_NOOP_DEBUG)
 	printf("NOOP\n");
 	#endif
