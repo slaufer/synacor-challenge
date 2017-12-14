@@ -23,6 +23,7 @@ execstate *init_execstate(program *prog) {
 
 	state->heap = malloc(HEAP_SIZE * BIN_FIELD_WIDTH);
 	state->heap_size = HEAP_SIZE;
+	memset(state->heap, 0, HEAP_SIZE * BIN_FIELD_WIDTH);
 
 	state->regs = malloc(REGS_SIZE * BIN_FIELD_WIDTH);
 	state->regs_size = REGS_SIZE;

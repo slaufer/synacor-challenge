@@ -7,6 +7,12 @@
 #define ADVANCE_PP(state, inst) state->pp += (INST_NARGS[inst->opcode] + 1) * BIN_FIELD_WIDTH
 #define SET_PP(state, pos) state->pp = state->prog->bin + pos * BIN_FIELD_WIDTH
 
+// macros for heap
+#define HEAP_PTR(state, addr) (state->heap + addr * BIN_FIELD_WIDTH)
+#define GET_HEAP(state, addr) GET_MEM(HEAP_PTR(state, addr)) // get reg value as uint16_t
+#define SET_HEAP(state, addr, val) SET_MEM(HEAP_PTR(state, addr), val)
+#define CPY_HEAP(state, addr, val_ptr) CPY_MEM(HEAP_PTR(state, addr), val_ptr)
+
 // macros for interacting with memory
 #define GET_MEM(src_ptr) (uint16_t) (src_ptr[0] + (uint16_t) 256 * src_ptr[1])
 #define SET_MEM(dst_ptr, val) dst_ptr[0] = val & 255; dst_ptr[1] = val / 256;

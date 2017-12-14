@@ -22,7 +22,10 @@
 // number of instructions
 #define INST_COUNT 22
 
+// names of instructions
+extern const char* const INST_NAME[];
+
 // argument counts for instructions
-extern uint8_t INST_NARGS[];
+extern const uint8_t const INST_NARGS[];
 
 #endif

@@ -15,15 +15,43 @@ instruction *init_instruction() {
 }
 
 /*
+ * instruction_debug - prints some information on an instruction and its arguments
+ */
+instruction_debug(execstate *state, instruction *inst) {
+	printf("%-5d %-2d %s ", (state->pp - state->prog->bin) / BIN_FIELD_WIDTH, inst->opcode, INST_NAME[inst->opcode]);
+
+	int i;
+	for (i = 0; i < INST_NARGS[inst->opcode]; i++) {
+		uint16_t arg = GET_ARG(inst, i);
+		uint16_t arg_i = INTERP_VALUE(state, arg);
+		
+		if (arg == arg_i) {
+			printf("%d ", arg);
+		} else {
+			printf("R%d:%d ", arg - REG_BOTTOM, arg_i);
+		}
+	}
+
+	printf("\n");
+}
+
+/*
  * instruction_halt - services opcode 0 (halt)
  *             also used for unknown opcodes
  */
 void instruction_halt(execstate *state, instruction *inst) {
-	if (inst->opcode == 0) {
-		printf("\n=== HALT ===\n");
-	} else {
-		printf("\n=== HALT UNIMPLEMENTED OPCODE=%d NARGS=%d ARGS=%d,%d,%d ===\n",
-			inst->opcode, INST_NARGS[inst->opcode], GET_ARG(inst, 0), GET_ARG(inst, 1), GET_ARG(inst, 2));
+
+	switch (inst->opcode) {
+		case 0:
+			printf("\n=== HALT ===\n");
+			exit(0);
+		case 18:
+			printf("\n=== STACK EMPTY ===\n");
+			exit(0);
+		default:
+			instruction_debug(state, inst);
+			printf("=== UNIMPLEMENTED INSTRUCTION %d ===\n", inst->opcode);
+			exit(1);
 	}
 
 	// don't bother doing anything else, just exit
@@ -35,7 +63,7 @@ void instruction_halt(execstate *state, instruction *inst) {
  */
 void instruction_set(execstate *state, instruction *inst) {
 	#if defined(INST_DEBUG) || defined(INST_SET_DEBUG) || defined(REG_DEBUG)
-	printf("SET %d %d\n", GET_ARG(inst, 0), GET_ARG(inst, 1));
+	instruction_debug(state, inst);
 	#endif
 
 	CPY_REG(state, GET_ARG(inst, 0), ARG_PTR(inst, 1));
@@ -47,7 +75,7 @@ void instruction_set(execstate *state, instruction *inst) {
  */
 void instruction_push(execstate *state, instruction *inst) {
 	#if defined(INST_DEBUG) || defined(INST_SET_DEBUG) || defined(STACK_DEBUG)
-	printf("PUSH %d\n", GET_ARG(inst, 0));
+	instruction_debug(state, inst);
 	#endif
 
 	STACK_PUSH(state, GET_ARG(inst, 0));
@@ -59,7 +87,7 @@ void instruction_push(execstate *state, instruction *inst) {
  */
 void instruction_pop(execstate *state, instruction *inst) {
 	#if defined(INST_DEBUG) || defined(INST_POP_DEBUG) || defined(STACK_DEBUG)
-	printf("POP %d\n", GET_ARG(inst, 0));
+	instruction_debug(state, inst);
 	#endif
 
 	STACK_POP(state, REG_PTR(state, GET_ARG(inst, 0)))
@@ -71,7 +99,7 @@ void instruction_pop(execstate *state, instruction *inst) {
  */
 void instruction_eq(execstate *state, instruction *inst) {
 	#if defined(INST_DEBUG) || defined(INST_EQ_DEBUG) || defined(COMP_DEBUG)
-	printf("EQ %d %d %d\n", GET_ARG(inst, 0), GET_ARG(inst, 1), GET_ARG(inst, 2));
+	instruction_debug(state, inst);
 	#endif
 
 	uint16_t result = INTERP_VALUE(state, GET_ARG(inst, 1)) == INTERP_VALUE(state, GET_ARG(inst, 2));
@@ -84,7 +112,7 @@ void instruction_eq(execstate *state, instruction *inst) {
  */
 void instruction_gt(execstate *state, instruction *inst) {
 	#if defined(INST_DEBUG) || defined(INST_GT_DEBUG) || defined(COMP_DEBUG)
-	printf("GT %d %d %d\n", GET_ARG(inst, 0), GET_ARG(inst, 1), GET_ARG(inst, 2));
+	instruction_debug(state, inst);
 	#endif
 
 	uint16_t result = INTERP_VALUE(state, GET_ARG(inst, 1)) > INTERP_VALUE(state, GET_ARG(inst, 2));
@@ -97,7 +125,7 @@ void instruction_gt(execstate *state, instruction *inst) {
  */
 void instruction_jmp(execstate *state, instruction *inst) {
 	#if defined(INST_DEBUG) || defined(INST_JMP_DEBUG) || defined(JMP_DEBUG)
-	printf("JMP %d\n", GET_ARG(inst, 0));
+	instruction_debug(state, inst);
 	#endif
 
 	SET_PP(state, INTERP_VALUE(state, GET_ARG(inst, 0)));
@@ -108,7 +136,7 @@ void instruction_jmp(execstate *state, instruction *inst) {
  */
 void instruction_jt(execstate *state, instruction *inst) {
 	#if defined(INST_DEBUG) || defined(INST_JT_DEBUG) || defined(JMP_DEBUG)
-	printf("JT %d %d\n", GET_ARG(inst, 0), GET_ARG(inst, 1));
+	instruction_debug(state, inst);
 	#endif
 
 	if (INTERP_VALUE(state, GET_ARG(inst, 0))) {
@@ -123,7 +151,7 @@ void instruction_jt(execstate *state, instruction *inst) {
  */
 void instruction_jf(execstate *state, instruction *inst) {
 	#if defined(INST_DEBUG) || defined(INST_JF_DEBUG) || defined(JMP_DEBUG)
-	printf("JF %d %d\n", inst->args[0], inst->args[1]);
+	instruction_debug(state, inst);
 	#endif
 
 	if (INTERP_VALUE(state, GET_ARG(inst, 0)) == 0) {
@@ -138,10 +166,36 @@ void instruction_jf(execstate *state, instruction *inst) {
  */
 void instruction_add(execstate *state, instruction *inst) {
 	#if defined(INST_DEBUG) || defined(INST_ADD_DEBUG) || defined(MATH_DEBUG)
-	printf("ADD %d %d %d\n", GET_ARG(inst, 0), GET_ARG(inst, 1), GET_ARG(inst, 2));
+	instruction_debug(state, inst);
 	#endif
 
 	uint16_t result = (INTERP_VALUE(state, GET_ARG(inst, 1)) + INTERP_VALUE(state, GET_ARG(inst, 2))) % MATH_MOD;
+	SET_REG(state, GET_ARG(inst, 0), result);
+	ADVANCE_PP(state, inst);
+}
+
+/*
+ * instruction_mult - services opcode 10, mult
+ */
+void instruction_mult(execstate *state, instruction *inst) {
+	#if defined(INST_DEBUG) || defined(INST_MULT_DEBUG) || defined(MATH_DEBUG)
+	instruction_debug(state, inst);
+	#endif
+
+	uint16_t result = ((uint32_t) INTERP_VALUE(state, GET_ARG(inst, 1)) * INTERP_VALUE(state, GET_ARG(inst, 2))) % MATH_MOD;
+	SET_REG(state, GET_ARG(inst, 0), result);
+	ADVANCE_PP(state, inst);
+}
+
+/*
+ * instruction_mod - services opcode 10, mod
+ */
+void instruction_mod(execstate *state, instruction *inst) {
+	#if defined(INST_DEBUG) || defined(INST_MOD_DEBUG) || defined(MATH_DEBUG)
+	instruction_debug(state, inst);
+	#endif
+
+	uint16_t result = ((uint32_t) INTERP_VALUE(state, GET_ARG(inst, 1)) % INTERP_VALUE(state, GET_ARG(inst, 2))) % MATH_MOD;
 	SET_REG(state, GET_ARG(inst, 0), result);
 	ADVANCE_PP(state, inst);
 }
@@ -151,7 +205,7 @@ void instruction_add(execstate *state, instruction *inst) {
  */
 void instruction_and(execstate *state, instruction *inst) {
 	#if defined(INST_DEBUG) || defined(INST_AND_DEBUG) || defined(BITWISE_DEBUG)
-	printf("AND %d %d %d\n", GET_ARG(inst, 0), GET_ARG(inst, 1), GET_ARG(inst, 2));
+	instruction_debug(state, inst);
 	#endif
 
 	uint16_t result = INTERP_VALUE(state, GET_ARG(inst, 1)) & INTERP_VALUE(state, GET_ARG(inst, 2));
@@ -164,7 +218,7 @@ void instruction_and(execstate *state, instruction *inst) {
  */
 void instruction_or(execstate *state, instruction *inst) {
 	#if defined(INST_DEBUG) || defined(INST_OR_DEBUG) || defined(BITWISE_DEBUG)
-	printf("OR %d %d %d\n", GET_ARG(inst, 0), GET_ARG(inst, 1), GET_ARG(inst, 2));
+	instruction_debug(state, inst);
 	#endif
 
 	uint16_t result = INTERP_VALUE(state, GET_ARG(inst, 1)) | INTERP_VALUE(state, GET_ARG(inst, 2));
@@ -177,7 +231,7 @@ void instruction_or(execstate *state, instruction *inst) {
  */
 void instruction_not(execstate *state, instruction *inst) {
 	#if defined(INST_DEBUG) || defined(INST_NOT_DEBUG) || defined(BITWISE_DEBUG)
-	printf("NOT %d %d\n", GET_ARG(inst, 0), GET_ARG(inst, 1));
+	instruction_debug(state, inst);
 	#endif
 
 	uint16_t result = INTERP_VALUE(state, GET_ARG(inst, 1)) ^ (uint16_t) 32767;
@@ -186,11 +240,24 @@ void instruction_not(execstate *state, instruction *inst) {
 }
 
 /*
+ * instruction_rmem - services opcode 15, rmem
+ * read memory at address <b> and write it to <a>
+ */
+void instruction_rmem(execstate *state, instruction *inst) {
+	#if defined(INST_DEBUG) || defined(INST_RMEM_DEBUG) || defined(JMP_DEBUG)
+	instruction_debug(state, inst);
+	#endif
+
+	CPY_REG(state, GET_ARG(inst, 0), HEAP_PTR( state, INTERP_VALUE(state, GET_ARG(inst, 0)) ));
+	ADVANCE_PP(state, inst);
+}
+
+/*
  * instruction_call - services opcode 17, call
  */
 void instruction_call(execstate *state, instruction *inst) {
 	#if defined(INST_DEBUG) || defined(INST_CALL_DEBUG) || defined(JMP_DEBUG)
-	printf("CALL %d\n", GET_ARG(inst, 0));
+	instruction_debug(state, inst);
 	#endif
 
 	uint16_t old_pp = (state->pp - state->prog->bin + BIN_FIELD_WIDTH * 2) / BIN_FIELD_WIDTH;
@@ -203,16 +270,14 @@ void instruction_call(execstate *state, instruction *inst) {
  */
 void instruction_ret(execstate *state, instruction *inst) {
 	#if defined(INST_DEBUG) || defined(INST_RET_DEBUG) || defined(JMP_DEBUG)
-	printf("RET %d\n", GET_ARG(inst, 0));
+	instruction_debug(state, inst);
 	#endif
 
 	if (state->sp == state->stack) {
 		instruction_halt(state, inst);
 	}
 
-	STACK_POP(state, REG_PTR(state, GET_ARG(inst, 0)))
-	uint16_t new_pp = state->prog->bin + (GET_ARG(inst, 0) + BIN_FIELD_WIDTH) * 2;
-	SET_PP(state, new_pp);
+	ADVANCE_PP(state, inst);
 }
 
 /*
@@ -220,7 +285,7 @@ void instruction_ret(execstate *state, instruction *inst) {
  */
 void instruction_out(execstate *state, instruction *inst) {
 	#if defined(INST_DEBUG) || defined(INST_OUT_DEBUG) || defined(IO_DEBUG)
-	printf("OUT %d\n", GET_ARG(inst, 0));
+	instruction_debug(state, inst);
 	#endif
 
 	printf("%c", GET_ARG(inst, 0));
@@ -234,7 +299,7 @@ void instruction_out(execstate *state, instruction *inst) {
  */
 void instruction_noop(execstate *state, instruction *inst) {
 	#if defined(INST_DEBUG) || defined(INST_NOOP_DEBUG)
-	printf("NOOP\n");
+	instruction_debug(state, inst);
 	#endif
 
 	// advance program pointer
