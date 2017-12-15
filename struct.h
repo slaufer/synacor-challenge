@@ -8,7 +8,7 @@
  * this usually shouldn't be modified at runtime
  */
 struct program {
-	uint16_t sz; // program size in bytes
+	uint32_t sz; // program size in bytes
 	uint8_t *bin; // binary instruction data
 };
 

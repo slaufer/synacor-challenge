@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "struct.h"
+#include "const.h"
 
 /*
  * init_program - creates a program object from a file on disk
@@ -22,7 +23,8 @@ program *init_program(const char *path) {
 
 	/* Get program size */
 	fseek(fh, 0L, SEEK_END);
-	prog->sz = ftell(fh);
+	//prog->sz = ftell(fh);
+	prog->sz = HEAP_SIZE * BIN_FIELD_WIDTH;
 	fseek(fh, 0L, SEEK_SET);
 
 	/* Load program into memory */

@@ -33,6 +33,7 @@
 // macros for interacting with stack
 #define STACK_PUSH(state, val) SET_MEM(state->sp, TRY_REG(state, val)); state->sp += BIN_FIELD_WIDTH;
 #define STACK_POP(state, dst_ptr) state->sp -= BIN_FIELD_WIDTH; CPY_MEM(dst_ptr, state->sp);
+#define STACK_GET(state) (state->sp == state->stack ? 0 : GET_MEM((state->sp - BIN_FIELD_WIDTH)))
 
 // macro for possibly getting register contents
 #define TRY_REG(state, val) (val < REG_BOTTOM ? val : GET_REG(state, val))

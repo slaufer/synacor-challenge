@@ -18,30 +18,38 @@ instruction *init_instruction() {
  * instruction_debug - prints some information on an instruction and its arguments
  */
 void instruction_debug(execstate *state, instruction *inst) {
-	int i;
-	#ifdef REG_DEBUG
-	for (i = 0; i < REGS_SIZE; i++) {
-		printf("R%d:%5hu  ", i, GET_REG(state, i + REG_BOTTOM));
-	}
-	printf("\n");
-	#endif
+	int i, j;
+	char buf[100];	
+	j = sprintf(buf, "|%5hu|%4s|", (state->pp - state->prog->bin) / BIN_FIELD_WIDTH, INST_NAME[inst->opcode]);
 
-	printf("%5hu  %2hu %-4s ", (state->pp - state->prog->bin) / BIN_FIELD_WIDTH, inst->opcode, INST_NAME[inst->opcode]);
-	char* buf[256];	
-
-	for (i = 0; i < INST_NARGS[inst->opcode]; i++) {
-		uint16_t arg = GET_ARG(inst, i);
-		uint16_t arg_i = TRY_REG(state, arg);
-		
-		if (arg == arg_i) {
-			printf("%-8hu  ", arg);
+	for (i = 0; i < INST_MAX_ARGS; i++) {
+		if (i < INST_NARGS[inst->opcode]) {
+			uint16_t arg = GET_ARG(inst, i);
+			uint16_t arg_i = TRY_REG(state, arg);
+			
+			if (arg == arg_i) {
+				j += sprintf(buf + j, "%5hu|", arg);
+			} else {
+				j += sprintf(buf + j, "~%-4d|", arg - REG_BOTTOM);
+			}
 		} else {
-			printf("R%hu:%-5hu  ", arg - REG_BOTTOM, arg_i);
+			j += sprintf(buf + j, "     |");
 		}
 	}
+
+	j += sprintf(buf + j, "%-2hu:%5hu|", (state->sp - state->stack) / 2, STACK_GET(state));
+
+	#ifdef SHOW_REGS
+	for (i = 0; i < REGS_SIZE; i++) {
+		j += sprintf(buf + j, "%5hu|", GET_REG(state, i + REG_BOTTOM));
+	}
+	#endif
 	
-	printf("\n");
+	puts(buf);
 }
+
+
+
 
 /*
  * instruction_halt - services opcode 0 (halt)
@@ -61,7 +69,6 @@ void instruction_halt(execstate *state, instruction *inst) {
 			printf("\n=== STACK EMPTY ===\n");
 			exit(0);
 		default:
-			instruction_debug(state, inst);
 			printf("=== UNIMPLEMENTED INSTRUCTION %d ===\n", inst->opcode);
 			exit(1);
 	}
