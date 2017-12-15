@@ -17,7 +17,7 @@ instruction *init_instruction() {
 /*
  * instruction_debug - prints some information on an instruction and its arguments
  */
-instruction_debug(execstate *state, instruction *inst) {
+void instruction_debug(execstate *state, instruction *inst) {
 	int i;
 	#ifdef REG_DEBUG
 	for (i = 0; i < REGS_SIZE; i++) {
@@ -45,7 +45,7 @@ instruction_debug(execstate *state, instruction *inst) {
 
 /*
  * instruction_halt - services opcode 0 (halt)
- *             also used for unknown opcodes
+ * stop execution and terminate the program
  */
 void instruction_halt(execstate *state, instruction *inst) {
 	#if defined(INST_DEBUG) || defined(INST_HALT_DEBUG) || defined(CORE_DEBUG)
@@ -56,6 +56,7 @@ void instruction_halt(execstate *state, instruction *inst) {
 		case 0:
 			printf("\n=== HALT ===\n");
 			exit(0);
+		case 3:
 		case 18:
 			printf("\n=== STACK EMPTY ===\n");
 			exit(0);
@@ -86,6 +87,7 @@ void instruction_set(execstate *state, instruction *inst) {
 
 /*
  * instruction_push - services opcode 2 (push)
+ * push <a> onto the stack
  */
 void instruction_push(execstate *state, instruction *inst) {
 	#if defined(INST_DEBUG) || defined(INST_SET_DEBUG) || defined(STACK_DEBUG)
@@ -98,11 +100,16 @@ void instruction_push(execstate *state, instruction *inst) {
 
 /*
  * instruction_pop - services opcode 3 (pop)
+ * remove the top element from the stack and write it into <a>; empty stack = error
  */
 void instruction_pop(execstate *state, instruction *inst) {
 	#if defined(INST_DEBUG) || defined(INST_POP_DEBUG) || defined(STACK_DEBUG)
 	instruction_debug(state, inst);
 	#endif
+
+	if (state->sp == state->stack) {
+		instruction_halt(state, inst);
+	}
 
 	STACK_POP(state, REG_PTR(state, GET_ARG(inst, 0)))
 	ADVANCE_PP(state, inst);
@@ -110,6 +117,7 @@ void instruction_pop(execstate *state, instruction *inst) {
 
 /*
  * instruction_eq - services opcode 4, eq
+ * set <a> to 1 if <b> is equal to <c>; set it to 0 otherwise
  */
 void instruction_eq(execstate *state, instruction *inst) {
 	#if defined(INST_DEBUG) || defined(INST_EQ_DEBUG) || defined(COMP_DEBUG)
@@ -123,6 +131,7 @@ void instruction_eq(execstate *state, instruction *inst) {
 
 /*
  * instruction_gt - services opcode 5 (gt)
+ * set <a> to 1 if <b> is greater than <c>; set it to 0 otherwise
  */
 void instruction_gt(execstate *state, instruction *inst) {
 	#if defined(INST_DEBUG) || defined(INST_GT_DEBUG) || defined(COMP_DEBUG)
@@ -136,6 +145,7 @@ void instruction_gt(execstate *state, instruction *inst) {
 
 /*
  * instruction_jmp - services opcode 6, jmp
+ * jump to <a>
  */
 void instruction_jmp(execstate *state, instruction *inst) {
 	#if defined(INST_DEBUG) || defined(INST_JMP_DEBUG) || defined(JMP_DEBUG)
@@ -147,6 +157,7 @@ void instruction_jmp(execstate *state, instruction *inst) {
 
 /*
  * instruction_jt - services opcode 7, jt
+ * if <a> is nonzero, jump to <b>
  */
 void instruction_jt(execstate *state, instruction *inst) {
 	#if defined(INST_DEBUG) || defined(INST_JT_DEBUG) || defined(JMP_DEBUG)
@@ -162,6 +173,7 @@ void instruction_jt(execstate *state, instruction *inst) {
 
 /*
  * instruction_jf - services opcode 8, jf
+ * if <a> is zero, jump to <b>
  */
 void instruction_jf(execstate *state, instruction *inst) {
 	#if defined(INST_DEBUG) || defined(INST_JF_DEBUG) || defined(JMP_DEBUG)
@@ -177,6 +189,7 @@ void instruction_jf(execstate *state, instruction *inst) {
 
 /*
  * instruction_add - services opcode 9, add
+ * assign into <a> the sum of <b> and <c> (modulo 32768)
  */
 void instruction_add(execstate *state, instruction *inst) {
 	#if defined(INST_DEBUG) || defined(INST_ADD_DEBUG) || defined(MATH_DEBUG)
@@ -190,6 +203,7 @@ void instruction_add(execstate *state, instruction *inst) {
 
 /*
  * instruction_mult - services opcode 10, mult
+ * store into <a> the product of <b> and <c> (modulo 32768)
  */
 void instruction_mult(execstate *state, instruction *inst) {
 	#if defined(INST_DEBUG) || defined(INST_MULT_DEBUG) || defined(MATH_DEBUG)
@@ -203,19 +217,21 @@ void instruction_mult(execstate *state, instruction *inst) {
 
 /*
  * instruction_mod - services opcode 10, mod
+ * store into <a> the remainder of <b> divided by <c>
  */
 void instruction_mod(execstate *state, instruction *inst) {
 	#if defined(INST_DEBUG) || defined(INST_MOD_DEBUG) || defined(MATH_DEBUG)
 	instruction_debug(state, inst);
 	#endif
 
-	uint16_t result = ((uint32_t) TRY_REG(state, GET_ARG(inst, 1)) % TRY_REG(state, GET_ARG(inst, 2))) % MATH_MOD;
+	uint16_t result = ((uint32_t) TRY_REG(state, GET_ARG(inst, 1)) % TRY_REG(state, GET_ARG(inst, 2)));
 	SET_REG(state, GET_ARG(inst, 0), result);
 	ADVANCE_PP(state, inst);
 }
 
 /*
  * instruction_and - services opcode 12, and
+ * stores into <a> the bitwise and of <b> and <c>
  */
 void instruction_and(execstate *state, instruction *inst) {
 	#if defined(INST_DEBUG) || defined(INST_AND_DEBUG) || defined(BITWISE_DEBUG)
@@ -229,6 +245,7 @@ void instruction_and(execstate *state, instruction *inst) {
 
 /*
  * instruction_or - services opcode 13, or
+ * stores into <a> the bitwise or of <b> and <c>
  */
 void instruction_or(execstate *state, instruction *inst) {
 	#if defined(INST_DEBUG) || defined(INST_OR_DEBUG) || defined(BITWISE_DEBUG)
@@ -242,6 +259,7 @@ void instruction_or(execstate *state, instruction *inst) {
 
 /*
  * instruction_not - services opcode 14, not
+ * stores 15-bit bitwise inverse of <b> in <a>
  */
 void instruction_not(execstate *state, instruction *inst) {
 	#if defined(INST_DEBUG) || defined(INST_NOT_DEBUG) || defined(BITWISE_DEBUG)
@@ -316,13 +334,14 @@ void instruction_ret(execstate *state, instruction *inst) {
 
 /*
  * instruction_out - services opcode 19, out
+ * write the character represented by ascii code <a> to the terminal
  */
 void instruction_out(execstate *state, instruction *inst) {
 	#if defined(INST_DEBUG) || defined(INST_OUT_DEBUG) || defined(IO_DEBUG)
 	instruction_debug(state, inst);
 	#endif
 
-	printf("%c", GET_ARG(inst, 0));
+	printf("%c", TRY_REG(state, GET_ARG(inst, 0)));
 
 	// advance program pointer
 	ADVANCE_PP(state, inst);
@@ -330,6 +349,7 @@ void instruction_out(execstate *state, instruction *inst) {
 
 /*
  * instruction_noop - services opcode 21, noop
+ * no operation
  */
 void instruction_noop(execstate *state, instruction *inst) {
 	#if defined(INST_DEBUG) || defined(INST_NOOP_DEBUG) || defined(CORE_DEBUG)
