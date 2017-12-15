@@ -28,6 +28,7 @@ void instruction_wmem(execstate*, instruction*); // 16
 void instruction_call(execstate*, instruction*); // 17
 void instruction_ret (execstate*, instruction*); // 18
 void instruction_out (execstate*, instruction*); // 19
+void instruction_in  (execstate*, instruction*); // 20
 void instruction_noop(execstate*, instruction*); // 21
 
 void (*INST_FNS[])(execstate*, instruction*) = {
@@ -51,7 +52,7 @@ void (*INST_FNS[])(execstate*, instruction*) = {
 	instruction_call, // opcode 17: call
 	instruction_ret,  // opcode 18: ret
 	instruction_out,  // opcode 19: out
-	instruction_halt, // opcode 20: in
+	instruction_in,   // opcode 20: in
 	instruction_noop, // opcode 21: noop
 };
 

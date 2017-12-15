@@ -25,12 +25,11 @@ void instruction_debug(execstate *state, instruction *inst) {
 	for (i = 0; i < INST_MAX_ARGS; i++) {
 		if (i < INST_NARGS[inst->opcode]) {
 			uint16_t arg = GET_ARG(inst, i);
-			uint16_t arg_i = TRY_REG(state, arg);
 			
-			if (arg == arg_i) {
-				j += sprintf(buf + j, "%5hu|", arg);
-			} else {
+			if (IS_REG(arg)) {
 				j += sprintf(buf + j, "~%-4d|", arg - REG_BOTTOM);
+			} else {
+				j += sprintf(buf + j, "%5hu|", arg);
 			}
 		} else {
 			j += sprintf(buf + j, "     |");
@@ -287,7 +286,9 @@ void instruction_rmem(execstate *state, instruction *inst) {
 	instruction_debug(state, inst);
 	#endif
 
-	CPY_REG(state, GET_ARG(inst, 0), PROG_PTR(state, TRY_REG(state, GET_ARG(inst, 1))));
+	uint16_t value = GET_PROG(state, TRY_REG(state, GET_ARG(inst, 1)));
+	SET_REG(state, GET_ARG(inst, 0), value % MATH_MOD)
+	// CPY_REG(state, GET_ARG(inst, 0), PROG_PTR(state, TRY_REG(state, GET_ARG(inst, 1))));
 	ADVANCE_PP(state, inst);
 }
 
@@ -349,6 +350,24 @@ void instruction_out(execstate *state, instruction *inst) {
 	#endif
 
 	printf("%c", TRY_REG(state, GET_ARG(inst, 0)));
+
+	// advance program pointer
+	ADVANCE_PP(state, inst);
+}
+
+/*
+ * instruction_in - services opcode 20, in
+ * read a character from the terminal and write its ascii code to <a>
+ * it can be assumed that once input starts, it will continue until a newline is encountered; this means that you can
+ * safely read whole lines from the keyboard and trust that they will be fully read
+ */
+void instruction_in(execstate *state, instruction *inst) {
+	#if defined(INST_DEBUG) || defined(INST_IN_DEBUG) || defined(IO_DEBUG)
+	instruction_debug(state, inst);
+	#endif
+
+	uint8_t ch = getchar();
+	SET_REG(state, GET_ARG(inst, 0), ch);
 
 	// advance program pointer
 	ADVANCE_PP(state, inst);

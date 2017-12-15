@@ -16,15 +16,16 @@
 #define CPY_PROG(state, addr, val_ptr) CPY_MEM(PROG_PTR(state, addr), val_ptr)
 
 // macros for interacting with memory
-#define GET_MEM(src_ptr) (uint16_t) (src_ptr[0] + (uint16_t) 256 * src_ptr[1])
-#define SET_MEM(dst_ptr, val) dst_ptr[0] = val & 255; dst_ptr[1] = val / 256;
-#define CPY_MEM(dst_ptr, val_ptr) dst_ptr[0] = val_ptr[0]; dst_ptr[1] = val_ptr[1];
+#define GET_MEM(src_ptr) (uint16_t) ((src_ptr)[0] + (uint16_t) 256 * (src_ptr)[1])
+#define SET_MEM(dst_ptr, val) (dst_ptr)[0] = val & 255; (dst_ptr)[1] = val / 256;
+#define CPY_MEM(dst_ptr, val_ptr) (dst_ptr)[0] = (val_ptr)[0]; (dst_ptr)[1] = (val_ptr)[1];
 
 // macro for reading arguments
 #define ARG_PTR(inst, pos) (inst->args + pos * BIN_FIELD_WIDTH) // get pointer to arg
 #define GET_ARG(inst, pos) GET_MEM(ARG_PTR(inst, pos)) // get arg as uint16_t
 
 // macros for interacting with registers
+#define IS_REG(reg) (reg >= REG_BOTTOM && reg < REG_BOTTOM + REGS_SIZE)
 #define REG_PTR(state, reg) (state->regs + (reg - 32768) * BIN_FIELD_WIDTH) // get pointer to reg
 #define GET_REG(state, reg) GET_MEM(REG_PTR(state, reg)) // get reg value as uint16_t
 #define SET_REG(state, reg, val) SET_MEM(REG_PTR(state, reg), val)
