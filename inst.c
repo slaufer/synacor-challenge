@@ -62,11 +62,11 @@ void instruction_halt(execstate *state, instruction *inst) {
 
 	switch (inst->opcode) {
 		case 0:
-			printf("\n=== HALT ===\n");
+			printf("=== HALT ===\n");
 			exit(0);
 		case 3:
 		case 18:
-			printf("\n=== STACK EMPTY ===\n");
+			printf("=== STACK EMPTY ===\n");
 			exit(0);
 		default:
 			printf("=== UNIMPLEMENTED INSTRUCTION %d ===\n", inst->opcode);
