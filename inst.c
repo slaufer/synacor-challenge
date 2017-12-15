@@ -330,8 +330,8 @@ void instruction_in(execstate *state, instruction *inst) {
 
 	// check if we just enabled debug mode
 	// read on to next char if we did
-	#ifdef INPUT_DEBUG_CODE
-	if (ch == INPUT_DEBUG_CODE) {
+	#ifdef INST_DEBUG_CODE
+	if (ch == INST_DEBUG_CODE) {
 		INST_DEBUG_OVERRIDE = ! INST_DEBUG_OVERRIDE;
 		printf("=== DEBUG MODE %s ===", INST_DEBUG_OVERRIDE ? "ENABLED" : "DISABLED");
 
