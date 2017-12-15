@@ -1,7 +1,7 @@
 #ifndef _CONST_H
 #define _CONST_H
 
-#include "struct.h"
+#include <stdint.h>
 
 // field width in program binary data
 #define BIN_FIELD_WIDTH 2

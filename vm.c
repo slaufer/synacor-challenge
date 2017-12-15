@@ -38,12 +38,6 @@ execstate *init_execstate(program *prog) {
 void get_instruction(execstate *state, instruction *inst) {
 	inst->opcode = GET_MEM(state->pp);
 	inst->args = state->pp + BIN_FIELD_WIDTH;
-
-	#ifdef CORE_DEBUG
-	printf("INSTRUCTION PP=%d OPCODE=%d NARGS=%d ARGS=%d,%d,%d\n",
-		(uint64_t) (state->pp - state->prog->bin) / BIN_FIELD_WIDTH,
-		inst->opcode, INST_NARGS[inst->opcode], inst->args[0], inst->args[1], inst->args[2]);
-	#endif
 }
 
 /*
@@ -58,7 +52,7 @@ void vm(execstate *state) {
 		get_instruction(state, inst);
 	
 		if (inst->opcode >= INST_COUNT) {
-			printf("=== UNKNOWN OPCODE %d, DYING ===\n", inst->opcode);
+			printf("=== UNKNOWN OPCODE %hu ===\n", inst->opcode);
 			exit(1);
 		}
 

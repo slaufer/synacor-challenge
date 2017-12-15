@@ -2,7 +2,7 @@
 #define _INST_H
 
 #include <stdint.h>
-#include "vm.h"
+#include "struct.h"
 
 // creates instruction objects
 instruction *init_instruction();

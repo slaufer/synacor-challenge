@@ -1,8 +1,6 @@
 #ifndef _VM_H
 #define _VM_H
 
-#include "const.h"
-
 // macros for moving program pointer
 #define SET_PP(state, pos) state->pp = state->prog->bin + pos * BIN_FIELD_WIDTH;
 #define GET_PP(state) ((uint16_t) (state->pp - state->prog->bin) / BIN_FIELD_WIDTH)
