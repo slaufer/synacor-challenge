@@ -31,10 +31,12 @@ void vm(execstate *state) {
 
 	while (1) {
 		get_instruction(state, &inst);
-	
+
+		#ifdef TELEPORT_VALUE	
 		if (state->pp == 5451) {
-			state->regs[7] = 1;
+			state->regs[7] = TELEPORT_VALUE;
 		}
+		#endif
 	
 		if (inst.opcode >= INST_COUNT) {
 			printf("=== UNKNOWN OPCODE %hu ===\n", inst.opcode);
@@ -46,6 +48,9 @@ void vm(execstate *state) {
 }
 
 void clear_state(execstate *state) {
+	state->pp = 0;
+	state->sp = 0;
+
 	int i;
 	for (i = 0; i < REGS_SIZE; i++) {
 		state->regs[i] = 0;
