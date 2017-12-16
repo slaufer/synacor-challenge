@@ -9,28 +9,36 @@
  * init_program - creates a program object from a file on disk
  * param path - path on disk to program binary
  */
-program *init_program(const char *path) {
-	FILE *fh;
-	program *prog;
-
+uint16_t load_program(execstate *state, const char *path) {
+	// make sure program is accessible
 	if (access(path, R_OK) == -1) {
-		return (program*) NULL;
+		return 0;
 	}
 
-	prog = (program*) malloc(sizeof(program));
+	FILE *fh = fopen(path, "r");
 
-	fh = fopen(path, "r");
+	if (fh == NULL) {
+		return 0;
+	}
 
-	/* Get program size */
+	// Get program size
 	fseek(fh, 0L, SEEK_END);
-	//prog->sz = ftell(fh);
-	prog->sz = HEAP_SIZE * BIN_FIELD_WIDTH;
+	uint16_t prog_size = ftell(fh);
 	fseek(fh, 0L, SEEK_SET);
 
-	/* Load program into memory */
-	prog->bin = (uint8_t*) malloc(prog->sz);
-	fread(prog->bin, prog->sz, 1, fh);
+	// Load program into buffer
+	uint8_t *prog_buf = (uint8_t*) malloc(prog_size);
+	fread(prog_buf, prog_size, 1, fh);
 	fclose(fh);
 
-	return prog;
+	// convert program and insert into memory
+	int i;
+	for (i = 0; i < prog_size; i += 2) {
+		uint8_t *src = prog_buf + i;
+		state->mem[i / 2] = src[0] + (uint16_t) src[1] * 256;
+	}
+
+	free(prog_buf);
+
+	return i / 2;
 }

@@ -6,16 +6,6 @@
 #include "instdebug.h"
 
 /*
- * init_instruction - creates an instruction object
- * return - an instruction object with space allocated for 3 args
- */
-instruction *init_instruction() {
-	instruction *inst = malloc(sizeof(instruction));
-	inst->opcode = 0;
-	inst->args = 0;
-}
-
-/*
  * instruction_debug - prints some information on an instruction and its arguments
  */
 void instruction_debug(execstate *state, instruction *inst) {
@@ -23,17 +13,15 @@ void instruction_debug(execstate *state, instruction *inst) {
 	char buf[100]; // buffering output makes this a little bit faster
 
 	// print out program pointer and instruction name
-	j = sprintf(buf, "|%5hu|%4s|", (state->pp - state->prog->bin) / BIN_FIELD_WIDTH, INST_NAME[inst->opcode]);
+	j = sprintf(buf, "|%5hu|%4s|", state->pp , INST_NAME[inst->opcode]);
 
 	// print out args
 	for (i = 0; i < INST_MAX_ARGS; i++) {
 		if (i < INST_NARGS[inst->opcode]) {
-			uint16_t arg = GET_ARG(inst, i);
-			
-			if (IS_REG(arg)) {
-				j += sprintf(buf + j, "~%-4d|", arg - REG_BOTTOM);
+			if (IS_REG(inst->args[i])) {
+				j += sprintf(buf + j, "~%-4d|", inst->args[i] - REG_BOTTOM);
 			} else {
-				j += sprintf(buf + j, "%5hu|", arg);
+				j += sprintf(buf + j, "%5hu|", inst->args[i]);
 			}
 		} else {
 			j += sprintf(buf + j, "     |");
@@ -41,11 +29,11 @@ void instruction_debug(execstate *state, instruction *inst) {
 	}
 
 	// print out stack
-	j += sprintf(buf + j, "%-2hu:%5hu|", (state->sp - state->stack) / 2, STACK_GET(state));
+	j += sprintf(buf + j, "%-2hu:%5hu|", state->sp, state->stack[state->sp > 0 ? state->sp - 1 : 0]);
 
 	// print out registers
 	for (i = 0; i < REGS_SIZE; i++) {
-		j += sprintf(buf + j, "%5hu|", GET_REG(state, i + REG_BOTTOM));
+		j += sprintf(buf + j, "%5hu|", state->regs[i]);
 	}
 	
 	puts(buf);
@@ -85,7 +73,7 @@ void instruction_halt(execstate *state, instruction *inst) {
 void instruction_set(execstate *state, instruction *inst) {
 	INST_DEBUG_MSG(state, inst, INST_SET_DEBUG | INST_REG_DEBUG)
 
-	SET_REG(state, GET_ARG(inst, 0), TRY_REG(state, GET_ARG(inst, 1)));
+	state->regs[TO_REG(inst->args[0])] = TRY_REG(state, inst->args[1]);
 	ADVANCE_PP(state, inst);
 };
 
@@ -96,7 +84,7 @@ void instruction_set(execstate *state, instruction *inst) {
 void instruction_push(execstate *state, instruction *inst) {
 	INST_DEBUG_MSG(state, inst, INST_PUSH_DEBUG | INST_STACK_DEBUG)
 
-	STACK_PUSH(state, GET_ARG(inst, 0));
+	STACK_PUSH(state, TRY_REG(state, inst->args[0]));
 	ADVANCE_PP(state, inst);
 };
 
@@ -107,11 +95,11 @@ void instruction_push(execstate *state, instruction *inst) {
 void instruction_pop(execstate *state, instruction *inst) {
 	INST_DEBUG_MSG(state, inst, INST_POP_DEBUG | INST_STACK_DEBUG)
 
-	if (state->sp == state->stack) {
+	if (state->sp == 0) {
 		instruction_halt(state, inst);
 	}
 
-	STACK_POP(state, REG_PTR(state, GET_ARG(inst, 0)))
+	state->regs[TO_REG(inst->args[0])] = STACK_POP(state);
 	ADVANCE_PP(state, inst);
 };
 
@@ -122,8 +110,7 @@ void instruction_pop(execstate *state, instruction *inst) {
 void instruction_eq(execstate *state, instruction *inst) {
 	INST_DEBUG_MSG(state, inst, INST_EQ_DEBUG | INST_COMP_DEBUG)
 
-	uint16_t result = TRY_REG(state, GET_ARG(inst, 1)) == TRY_REG(state, GET_ARG(inst, 2));
-	SET_REG(state, GET_ARG(inst, 0), result);
+	state->regs[TO_REG(inst->args[0])] = TRY_REG(state, inst->args[1]) == TRY_REG(state, inst->args[2]);
 	ADVANCE_PP(state, inst);
 }
 
@@ -134,8 +121,7 @@ void instruction_eq(execstate *state, instruction *inst) {
 void instruction_gt(execstate *state, instruction *inst) {
 	INST_DEBUG_MSG(state, inst, INST_GT_DEBUG | INST_COMP_DEBUG)
 
-	uint16_t result = TRY_REG(state, GET_ARG(inst, 1)) > TRY_REG(state, GET_ARG(inst, 2));
-	SET_REG(state, GET_ARG(inst, 0), result)
+	state->regs[TO_REG(inst->args[0])] = TRY_REG(state, inst->args[1]) > TRY_REG(state, inst->args[2]);
 	ADVANCE_PP(state, inst);
 };
 
@@ -146,7 +132,7 @@ void instruction_gt(execstate *state, instruction *inst) {
 void instruction_jmp(execstate *state, instruction *inst) {
 	INST_DEBUG_MSG(state, inst, INST_JMP_DEBUG | INST_JMP_DEBUG)
 
-	SET_PP(state, TRY_REG(state, GET_ARG(inst, 0)));
+	state->pp = TRY_REG(state, inst->args[0]);
 }
 
 /*
@@ -156,8 +142,8 @@ void instruction_jmp(execstate *state, instruction *inst) {
 void instruction_jt(execstate *state, instruction *inst) {
 	INST_DEBUG_MSG(state, inst, INST_JT_DEBUG | INST_JMP_DEBUG)
 
-	if (TRY_REG(state, GET_ARG(inst, 0))) {
-		SET_PP(state, TRY_REG(state, GET_ARG(inst, 1)));
+	if (TRY_REG(state, inst->args[0])) {
+		state->pp = TRY_REG(state, inst->args[1]);
 	} else {
 		ADVANCE_PP(state, inst);
 	}
@@ -170,8 +156,8 @@ void instruction_jt(execstate *state, instruction *inst) {
 void instruction_jf(execstate *state, instruction *inst) {
 	INST_DEBUG_MSG(state, inst, INST_JF_DEBUG | INST_JMP_DEBUG)
 
-	if (TRY_REG(state, GET_ARG(inst, 0)) == 0) {
-		SET_PP(state, TRY_REG(state, GET_ARG(inst,1)));
+	if (TRY_REG(state, inst->args[0]) == 0) {
+		state->pp = TRY_REG(state, inst->args[1]);
 	} else {
 		ADVANCE_PP(state, inst);
 	}
@@ -184,8 +170,7 @@ void instruction_jf(execstate *state, instruction *inst) {
 void instruction_add(execstate *state, instruction *inst) {
 	INST_DEBUG_MSG(state, inst, INST_ADD_DEBUG | INST_MATH_DEBUG)
 
-	uint16_t result = (TRY_REG(state, GET_ARG(inst, 1)) + TRY_REG(state, GET_ARG(inst, 2))) % MATH_MOD;
-	SET_REG(state, GET_ARG(inst, 0), result);
+	state->regs[TO_REG(inst->args[0])] = (TRY_REG(state, inst->args[1]) + TRY_REG(state, inst->args[2])) % MATH_MOD;
 	ADVANCE_PP(state, inst);
 }
 
@@ -196,8 +181,7 @@ void instruction_add(execstate *state, instruction *inst) {
 void instruction_mult(execstate *state, instruction *inst) {
 	INST_DEBUG_MSG(state, inst, INST_MULT_DEBUG | INST_MATH_DEBUG)
 
-	uint16_t result = ((uint32_t) TRY_REG(state, GET_ARG(inst, 1)) * TRY_REG(state, GET_ARG(inst, 2))) % MATH_MOD;
-	SET_REG(state, GET_ARG(inst, 0), result);
+	state->regs[TO_REG(inst->args[0])] = (TRY_REG(state, inst->args[1]) * TRY_REG(state, inst->args[2])) % MATH_MOD;
 	ADVANCE_PP(state, inst);
 }
 
@@ -208,8 +192,7 @@ void instruction_mult(execstate *state, instruction *inst) {
 void instruction_mod(execstate *state, instruction *inst) {
 	INST_DEBUG_MSG(state, inst, INST_MOD_DEBUG | INST_MATH_DEBUG)
 
-	uint16_t result = ((uint32_t) TRY_REG(state, GET_ARG(inst, 1)) % TRY_REG(state, GET_ARG(inst, 2)));
-	SET_REG(state, GET_ARG(inst, 0), result);
+	state->regs[TO_REG(inst->args[0])] = (TRY_REG(state, inst->args[1]) % TRY_REG(state, inst->args[2]));
 	ADVANCE_PP(state, inst);
 }
 
@@ -220,8 +203,7 @@ void instruction_mod(execstate *state, instruction *inst) {
 void instruction_and(execstate *state, instruction *inst) {
 	INST_DEBUG_MSG(state, inst, INST_AND_DEBUG | INST_BITWISE_DEBUG)
 
-	uint16_t result = TRY_REG(state, GET_ARG(inst, 1)) & TRY_REG(state, GET_ARG(inst, 2));
-	SET_REG(state, GET_ARG(inst, 0), result);
+	state->regs[TO_REG(inst->args[0])] = (TRY_REG(state, inst->args[1]) & TRY_REG(state, inst->args[2]));
 	ADVANCE_PP(state, inst);
 }
 
@@ -232,8 +214,7 @@ void instruction_and(execstate *state, instruction *inst) {
 void instruction_or(execstate *state, instruction *inst) {
 	INST_DEBUG_MSG(state, inst, INST_OR_DEBUG | INST_BITWISE_DEBUG)
 
-	uint16_t result = TRY_REG(state, GET_ARG(inst, 1)) | TRY_REG(state, GET_ARG(inst, 2));
-	SET_REG(state, GET_ARG(inst, 0), result);
+	state->regs[TO_REG(inst->args[0])] = (TRY_REG(state, inst->args[1]) | TRY_REG(state, inst->args[2]));
 	ADVANCE_PP(state, inst);
 }
 
@@ -244,8 +225,7 @@ void instruction_or(execstate *state, instruction *inst) {
 void instruction_not(execstate *state, instruction *inst) {
 	INST_DEBUG_MSG(state, inst, INST_NOT_DEBUG | INST_BITWISE_DEBUG)
 
-	uint16_t result = TRY_REG(state, GET_ARG(inst, 1)) ^ (uint16_t) 32767;
-	SET_REG(state, GET_ARG(inst, 0), result);
+	state->regs[TO_REG(inst->args[0])] = TRY_REG(state, inst->args[1]) ^ (uint16_t) 32767;
 	ADVANCE_PP(state, inst);
 }
 
@@ -256,9 +236,7 @@ void instruction_not(execstate *state, instruction *inst) {
 void instruction_rmem(execstate *state, instruction *inst) {
 	INST_DEBUG_MSG(state, inst, INST_RMEM_DEBUG | INST_HEAP_DEBUG)
 
-	uint16_t value = GET_PROG(state, TRY_REG(state, GET_ARG(inst, 1)));
-	SET_REG(state, GET_ARG(inst, 0), value % MATH_MOD)
-	// CPY_REG(state, GET_ARG(inst, 0), PROG_PTR(state, TRY_REG(state, GET_ARG(inst, 1))));
+	state->regs[TO_REG(inst->args[0])] = state->mem[TRY_REG(state, inst->args[1])];
 	ADVANCE_PP(state, inst);
 }
 
@@ -269,7 +247,7 @@ void instruction_rmem(execstate *state, instruction *inst) {
 void instruction_wmem(execstate *state, instruction *inst) {
 	INST_DEBUG_MSG(state, inst, INST_WMEM_DEBUG | INST_HEAP_DEBUG)
 
-	SET_MEM(PROG_PTR(state, TRY_REG(state, GET_ARG(inst, 0))), TRY_REG(state, GET_ARG(inst, 1)));
+	state->mem[TRY_REG(state, inst->args[0])] = TRY_REG(state, inst->args[1]);
 	ADVANCE_PP(state, inst);
 }
 
@@ -280,10 +258,8 @@ void instruction_wmem(execstate *state, instruction *inst) {
 void instruction_call(execstate *state, instruction *inst) {
 	INST_DEBUG_MSG(state, inst, INST_CALL_DEBUG | INST_JMP_DEBUG)
 
-	// printf("calling to %hu, pushing %hu\n", TRY_REG(state, GET_ARG(inst, 0)), NEXT_PP(state, inst));
-
-	STACK_PUSH(state, NEXT_PP(state, inst));
-	SET_PP(state, TRY_REG(state, GET_ARG(inst, 0)));
+	STACK_PUSH(state, state->pp + INST_NARGS[inst->opcode] + 1);
+	state->pp = TRY_REG(state, inst->args[0]);
 }
 
 /*
@@ -293,15 +269,11 @@ void instruction_call(execstate *state, instruction *inst) {
 void instruction_ret(execstate *state, instruction *inst) {
 	INST_DEBUG_MSG(state, inst, INST_RET_DEBUG | INST_JMP_DEBUG)
 
-	if (state->sp == state->stack) {
+	if (state->sp == 0) {
 		instruction_halt(state, inst);
 	}
 
-	uint8_t target[2];
-	STACK_POP(state, target);
-	// printf("returning to %hu\n", GET_MEM(target));
-
-	SET_PP(state, GET_MEM(target));
+	state->pp = STACK_POP(state);
 }
 
 /*
@@ -311,9 +283,7 @@ void instruction_ret(execstate *state, instruction *inst) {
 void instruction_out(execstate *state, instruction *inst) {
 	INST_DEBUG_MSG(state, inst, INST_OUT_DEBUG | INST_IO_DEBUG)
 
-	printf("%c", TRY_REG(state, GET_ARG(inst, 0)));
-
-	// advance program pointer
+	printf("%c", TRY_REG(state, inst->args[0]));
 	ADVANCE_PP(state, inst);
 }
 
@@ -340,7 +310,7 @@ void instruction_in(execstate *state, instruction *inst) {
 	}
 	#endif
 
-	SET_REG(state, GET_ARG(inst, 0), ch);
+	state->regs[TO_REG(inst->args[0])] = ch;
 
 	#ifdef INPUT_ECHO
 	putchar(ch);

@@ -9,35 +9,16 @@
 #include "program.h"
 
 /*
- * init_execstate - creates a program execution state
- * param prog - program binary object to execute
- */
-execstate *init_execstate(program *prog) {
-	execstate *state = malloc(sizeof(execstate));
-
-	state->prog = prog;
-	state->pp = prog->bin;
-
-	state->stack = malloc(HEAP_SIZE * BIN_FIELD_WIDTH);
-	state->sp = state->stack;
-
-	state->heap = prog->bin;
-	state->heap_size = prog->sz;
-
-	state->regs = malloc(REGS_SIZE * BIN_FIELD_WIDTH);
-	state->regs_size = REGS_SIZE;
-	memset(state->regs, 0, REGS_SIZE * BIN_FIELD_WIDTH);
-
-	return state;
-}
-
-/*
  * get_instruction - retrieves an instruction and its arguments from a given memory location
  * param inst - pointer to an instruction object to be filled out
  */
 void get_instruction(execstate *state, instruction *inst) {
-	inst->opcode = GET_MEM(state->pp);
-	inst->args = state->pp + BIN_FIELD_WIDTH;
+	inst->opcode = state->mem[state->pp];
+
+	int i;
+	for (i = 0; i < INST_MAX_ARGS; i++) {
+		inst->args[i] = state->mem[state->pp + i + 1];
+	}
 }
 
 /*
@@ -46,24 +27,38 @@ void get_instruction(execstate *state, instruction *inst) {
 void vm(execstate *state) {
 	printf("=== VM Executing... ===\n");
 
-	instruction *inst = init_instruction();
+	instruction inst;
 
 	while (1) {
-		get_instruction(state, inst);
+		get_instruction(state, &inst);
 	
-		//if (GET_PP(state) == 5451) {
-		//	SET_REG(state, REG_BOTTOM + 7, 1);
-		//}
+		if (state->pp == 5451) {
+			state->regs[7] = 1;
+		}
 	
-		if (inst->opcode >= INST_COUNT) {
-			printf("=== UNKNOWN OPCODE %hu ===\n", inst->opcode);
+		if (inst.opcode >= INST_COUNT) {
+			printf("=== UNKNOWN OPCODE %hu ===\n", inst.opcode);
 			exit(1);
 		}
 
-		INST_FNS[inst->opcode](state, inst);
+		INST_FNS[inst.opcode](state, &inst);
 	}
 }
 
+void clear_state(execstate *state) {
+	int i;
+	for (i = 0; i < REGS_SIZE; i++) {
+		state->regs[i] = 0;
+	}
+
+	for (i = 0; i < MEM_SIZE; i++) {
+		state->mem[i] = 0;
+	}
+
+	for (i = 0; i < STACK_SIZE; i++) {
+		state->stack[i] = 0;
+	}
+}
 
 int main (int argc, char **argv) {
 	//////////////
@@ -82,21 +77,22 @@ int main (int argc, char **argv) {
 	// LOAD BINARY //
 	/////////////////
 
-	program *prog = init_program(path);
+	execstate state;
+	clear_state(&state);
+	uint16_t prog_len = load_program(&state, path);
 
-	if (prog == NULL) {
+	if (prog_len == 0) {
 		printf("=== Unable to open %s for reading ===\n", path);
 		return 1;
 	}
 
-	printf("=== Loaded program from %s, size %d ===\n", path, prog->sz);
+	printf("=== Loaded program from %s, %hu instructions ===\n", path, prog_len);
 
 	/////////////////////
 	// EXECUTE PROGRAM //
 	/////////////////////
 
-	execstate *state = init_execstate(prog);
-	vm(state);
+	vm(&state);
 
 	return 0;
 }

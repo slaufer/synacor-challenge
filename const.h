@@ -10,7 +10,8 @@
 #define REG_BOTTOM 32768
 
 // heap and register sizes (in elements, not bytes)
-#define HEAP_SIZE 32768
+#define STACK_SIZE 32768
+#define MEM_SIZE 32768
 #define REGS_SIZE 8
 
 // all math is mod MATH_MOD

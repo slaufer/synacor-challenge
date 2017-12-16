@@ -2,6 +2,6 @@
 #define _PROGRAM_H
 #include "struct.h"
 
-program *init_program(const char*);
+uint16_t load_program(execstate*, const char*);
 
 #endif
