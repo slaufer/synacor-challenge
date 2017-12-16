@@ -134,9 +134,13 @@
 #endif
 
 // debug macro
-#define INST_DEBUG_MSG(state, inst, flag) if ((flag) && (INST_DEBUG | INST_DEBUG_OVERRIDE)) instruction_debug(state, inst);
+#define INST_DEBUG_MSG(state, inst, flag) if ( ((flag) | INST_DEBUG) && INST_DEBUG_OVERRIDE ) instruction_debug(state, inst);
 
 // debug override so we can enable it at runtime
+#ifdef INST_DEBUG_START
+uint8_t INST_DEBUG_OVERRIDE = 1;
+#else
 uint8_t INST_DEBUG_OVERRIDE = 0;
+#endif
 
 #endif

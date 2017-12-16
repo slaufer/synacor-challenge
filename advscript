@@ -48,5 +48,6 @@ north
 take teleporter
 use teleporter
 go outside
-use teleporter
+use teleporter|
+|
 

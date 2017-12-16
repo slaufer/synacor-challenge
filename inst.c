@@ -333,7 +333,7 @@ void instruction_in(execstate *state, instruction *inst) {
 	#ifdef INST_DEBUG_CODE
 	if (ch == INST_DEBUG_CODE) {
 		INST_DEBUG_OVERRIDE = ! INST_DEBUG_OVERRIDE;
-		printf("=== DEBUG MODE %s ===", INST_DEBUG_OVERRIDE ? "ENABLED" : "DISABLED");
+		printf("\n=== DEBUG MODE %s ===\n", INST_DEBUG_OVERRIDE ? "ENABLED" : "DISABLED");
 
 		instruction_in(state, inst);
 		return;

@@ -51,6 +51,10 @@ void vm(execstate *state) {
 	while (1) {
 		get_instruction(state, inst);
 	
+		//if (GET_PP(state) == 5451) {
+		//	SET_REG(state, REG_BOTTOM + 7, 1);
+		//}
+	
 		if (inst->opcode >= INST_COUNT) {
 			printf("=== UNKNOWN OPCODE %hu ===\n", inst->opcode);
 			exit(1);
