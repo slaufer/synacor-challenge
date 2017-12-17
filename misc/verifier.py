@@ -27,4 +27,4 @@ def lab0(r0, r1, r7, stack):
 	(r0, r1, r7, stack) = lab0(r0, r1, r7, stack)
 	return (r0, r1, r7, stack)
 	
-lab0(4, 1, 31337, [])
+print(lab0(4, 1, 31337, []))

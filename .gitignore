@@ -1,6 +1,7 @@
 .*.swp
 *.o
 vm.log
+verifier.log
 scvm
 scdasm
 a.out
