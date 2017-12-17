@@ -2,3 +2,6 @@
 *.o
 vm.log
 scvm
+scdasm
+a.out
+verifier

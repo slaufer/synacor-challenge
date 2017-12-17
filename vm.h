@@ -10,8 +10,7 @@
 #define TRY_REG(state, val) (IS_REG(val) ? state->regs[TO_REG(val)] : val)
 
 // macros for interacting with stack
-#define STACK_PUSH(state, val) state->stack[state->sp] = val; state->sp += 1;
-#define STACK_GET(state) (state->stack[state->sp - 1])
-#define STACK_POP(state) (state->sp -= 1, state->stack[state->sp])
+#define STACK_PUSH(state, val) (state->stack[state->sp++] = val)
+#define STACK_POP(state) (state->stack[--state->sp])
 
 #endif

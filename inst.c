@@ -6,43 +6,6 @@
 #include "instdebug.h"
 
 /*
- * instruction_debug - prints some information on an instruction and its arguments
- */
-void instruction_debug(execstate *state, instruction *inst) {
-	int i, j;
-	char buf[100]; // buffering output makes this a little bit faster
-
-	// print out program pointer and instruction name
-	j = sprintf(buf, "|%5hu|%4s|", state->pp , INST_NAME[inst->opcode]);
-
-	// print out args
-	for (i = 0; i < INST_MAX_ARGS; i++) {
-		if (i < INST_NARGS[inst->opcode]) {
-			if (IS_REG(inst->args[i])) {
-				j += sprintf(buf + j, "~%-4d|", inst->args[i] - REG_BOTTOM);
-			} else {
-				j += sprintf(buf + j, "%5hu|", inst->args[i]);
-			}
-		} else {
-			j += sprintf(buf + j, "     |");
-		}
-	}
-
-	// print out stack
-	j += sprintf(buf + j, "%-2hu:%5hu|", state->sp, state->stack[state->sp > 0 ? state->sp - 1 : 0]);
-
-	// print out registers
-	for (i = 0; i < REGS_SIZE; i++) {
-		j += sprintf(buf + j, "%5hu|", state->regs[i]);
-	}
-	
-	puts(buf);
-}
-
-
-
-
-/*
  * instruction_halt - services opcode 0 (halt)
  * stop execution and terminate the program
  */
@@ -130,7 +93,7 @@ void instruction_gt(execstate *state, instruction *inst) {
  * jump to <a>
  */
 void instruction_jmp(execstate *state, instruction *inst) {
-	INST_DEBUG_MSG(state, inst, INST_JMP_DEBUG | INST_JMP_DEBUG)
+	INST_DEBUG_MSG(state, inst, INST_JMP_DEBUG | INST_PP_DEBUG)
 
 	state->pp = TRY_REG(state, inst->args[0]);
 }
@@ -140,7 +103,7 @@ void instruction_jmp(execstate *state, instruction *inst) {
  * if <a> is nonzero, jump to <b>
  */
 void instruction_jt(execstate *state, instruction *inst) {
-	INST_DEBUG_MSG(state, inst, INST_JT_DEBUG | INST_JMP_DEBUG)
+	INST_DEBUG_MSG(state, inst, INST_JT_DEBUG | INST_PP_DEBUG)
 
 	if (TRY_REG(state, inst->args[0])) {
 		state->pp = TRY_REG(state, inst->args[1]);
@@ -154,7 +117,7 @@ void instruction_jt(execstate *state, instruction *inst) {
  * if <a> is zero, jump to <b>
  */
 void instruction_jf(execstate *state, instruction *inst) {
-	INST_DEBUG_MSG(state, inst, INST_JF_DEBUG | INST_JMP_DEBUG)
+	INST_DEBUG_MSG(state, inst, INST_JF_DEBUG | INST_PP_DEBUG)
 
 	if (TRY_REG(state, inst->args[0]) == 0) {
 		state->pp = TRY_REG(state, inst->args[1]);
@@ -234,7 +197,7 @@ void instruction_not(execstate *state, instruction *inst) {
  * read memory at address <b> and write it to <a>
  */
 void instruction_rmem(execstate *state, instruction *inst) {
-	INST_DEBUG_MSG(state, inst, INST_RMEM_DEBUG | INST_HEAP_DEBUG)
+	INST_DEBUG_MSG(state, inst, INST_RMEM_DEBUG | INST_MEM_DEBUG)
 
 	state->regs[TO_REG(inst->args[0])] = state->mem[TRY_REG(state, inst->args[1])];
 	ADVANCE_PP(state, inst);
@@ -245,7 +208,7 @@ void instruction_rmem(execstate *state, instruction *inst) {
  * write the value from <b> into memory at address <a>
  */
 void instruction_wmem(execstate *state, instruction *inst) {
-	INST_DEBUG_MSG(state, inst, INST_WMEM_DEBUG | INST_HEAP_DEBUG)
+	INST_DEBUG_MSG(state, inst, INST_WMEM_DEBUG | INST_MEM_DEBUG)
 
 	state->mem[TRY_REG(state, inst->args[0])] = TRY_REG(state, inst->args[1]);
 	ADVANCE_PP(state, inst);
@@ -256,7 +219,7 @@ void instruction_wmem(execstate *state, instruction *inst) {
  * write the address of the next instruction to the stack and jump to <a>
  */
 void instruction_call(execstate *state, instruction *inst) {
-	INST_DEBUG_MSG(state, inst, INST_CALL_DEBUG | INST_JMP_DEBUG)
+	INST_DEBUG_MSG(state, inst, INST_CALL_DEBUG | INST_PP_DEBUG | INST_STACK_DEBUG)
 
 	STACK_PUSH(state, state->pp + INST_NARGS[inst->opcode] + 1);
 	state->pp = TRY_REG(state, inst->args[0]);
@@ -267,7 +230,7 @@ void instruction_call(execstate *state, instruction *inst) {
  * remove the top element from the stack and jump to it; empty stack = halt
  */
 void instruction_ret(execstate *state, instruction *inst) {
-	INST_DEBUG_MSG(state, inst, INST_RET_DEBUG | INST_JMP_DEBUG)
+	INST_DEBUG_MSG(state, inst, INST_RET_DEBUG | INST_PP_DEBUG | INST_STACK_DEBUG)
 
 	if (state->sp == 0) {
 		instruction_halt(state, inst);
@@ -297,19 +260,6 @@ void instruction_in(execstate *state, instruction *inst) {
 	INST_DEBUG_MSG(state, inst, INST_IN_DEBUG | INST_IO_DEBUG)
 
 	uint8_t ch = getchar();
-
-	// check if we just enabled debug mode
-	// read on to next char if we did
-	#ifdef INST_DEBUG_CODE
-	if (ch == INST_DEBUG_CODE) {
-		INST_DEBUG_OVERRIDE = ! INST_DEBUG_OVERRIDE;
-		printf("\n=== DEBUG MODE %s ===\n", INST_DEBUG_OVERRIDE ? "ENABLED" : "DISABLED");
-
-		instruction_in(state, inst);
-		return;
-	}
-	#endif
-
 	state->regs[TO_REG(inst->args[0])] = ch;
 
 	#ifdef INPUT_ECHO

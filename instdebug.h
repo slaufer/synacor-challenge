@@ -1,6 +1,9 @@
 #ifndef _INSTDEBUG_H
 #define _INSTDEBUG_H
 
+#include <stdint.h>
+#include "struct.h"
+
 // debug individual instructions
 #ifndef INST_HALT_DEBUG
 #define INST_HALT_DEBUG 0
@@ -92,43 +95,53 @@
 
 
 // debug instruction groups
+
+// group of HALT, NOOP
 #ifndef INST_CORE_DEBUG
 #define INST_CORE_DEBUG 0
 #endif
 
+// group of SET
 #ifndef INST_REG_DEBUG
 #define INST_REG_DEBUG 0
 #endif
 
+// group of PUSH, POP, CALL, RET
 #ifndef INST_STACK_DEBUG
 #define INST_STACK_DEBUG 0
 #endif
 
+// group of EQ, GT
 #ifndef INST_COMP_DEBUG
 #define INST_COMP_DEBUG 0
 #endif
 
+// group of IN, OUT
 #ifndef INST_IO_DEBUG
 #define INST_IO_DEBUG 0
 #endif
 
-#ifndef INST_JMP_DEBUG
-#define INST_JMP_DEBUG 0
+// group of JMP, JT, JF, CALL, RET
+#ifndef INST_PP_DEBUG
+#define INST_PP_DEBUG 0
 #endif
 
-#ifndef INST_HEAP_DEBUG
-#define INST_HEAP_DEBUG 0
+// group of RMEM, WMEM
+#ifndef INST_MEM_DEBUG
+#define INST_MEM_DEBUG 0
 #endif
 
+// group of AND, OR, NOT
 #ifndef INST_BITWISE_DEBUG
 #define INST_BITWISE_DEBUG 0
 #endif
 
+// group of ADD, MULT, MOD
 #ifndef INST_MATH_DEBUG
 #define INST_MATH_DEBUG 0
 #endif
 
-// debug all instructions
+// group of ALL INSTRUCTIONS
 #ifndef INST_DEBUG
 #define INST_DEBUG 0
 #endif
@@ -137,10 +150,8 @@
 #define INST_DEBUG_MSG(state, inst, flag) if ( ((flag) | INST_DEBUG) && INST_DEBUG_OVERRIDE ) instruction_debug(state, inst);
 
 // debug override so we can enable it at runtime
-#ifdef INST_DEBUG_START
-uint8_t INST_DEBUG_OVERRIDE = 1;
-#else
-uint8_t INST_DEBUG_OVERRIDE = 0;
-#endif
+extern uint8_t INST_DEBUG_OVERRIDE;
+
+extern void instruction_debug(execstate *state, instruction *inst);
 
 #endif

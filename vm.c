@@ -6,6 +6,7 @@
 #include "struct.h"
 #include "vm.h"
 #include "inst.h"
+#include "instdebug.h"
 #include "program.h"
 
 /*
