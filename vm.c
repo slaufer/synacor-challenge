@@ -35,7 +35,10 @@ void vm(execstate *state) {
 
 		#ifdef TELEPORT_VALUE	
 		if (state->pp == 5451) {
+			state->pp = 5491;
 			state->regs[7] = TELEPORT_VALUE;
+			state->regs[0] = 6;
+			continue;
 		}
 		#endif
 	
