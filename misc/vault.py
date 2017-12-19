@@ -16,7 +16,6 @@ def evalpath(vault, path):
 
 def pathtext(path):
 	text = ""
-
 	last = path[0]
 
 	for pos in path[1:]:
@@ -36,7 +35,12 @@ def pathtext(path):
 
 	return text
 
-def step(vault, travel, path, depth, maxdepth):
+def step(vault, travel, start, end, maxdepth, goal, path=[], depth=0):
+	# if the path isn't initialized, do so now
+	if not path:
+		path = [start]
+		depth = 1
+
 	# if we've gone too deep, return
 	if depth > maxdepth:
 		return
@@ -45,10 +49,10 @@ def step(vault, travel, path, depth, maxdepth):
 	(x, y) = path[-1]
 
 
-	# if we're on a literal square,
+	# if we're on a literal square, determine if we need to do anything
 	if isinstance(vault[y][x], int):
 		# if we went back into the antechamber, stop here
-		if (x, y) == (0, 3) and depth > 1:
+		if (x, y) == start and depth > 1:
 			return
 
 		# get the path weight so far
@@ -59,16 +63,17 @@ def step(vault, travel, path, depth, maxdepth):
 			return
 
 		# if we're in the vault door chamber
-		if (x, y) == (3, 0):
+		if (x, y) == end:
 			# weight == 30 is a success, anything else is a failure
-			if weight == 30:
+			if weight == goal:
 				print(weight, pathtext(path))
 			else:
 				return
 
+	# traverse into all valid adjacent squares
 	for target in [(x+dx, y+dy) for (dx, dy) in travel if x+dx in range(0, len(vault)) and y+dy in range(0, len(vault[0]))]:
 		path.append(target)
-		step(vault, travel, path, depth + 1, maxdepth)
+		step(vault, travel, start, end, maxdepth, goal, path, depth + 1)
 		path.pop()
 
 vault = [
@@ -78,5 +83,9 @@ vault = [
 	[ 22 , '-', 9  , '*' ]
 ];
 travel = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+start = (0, 3)
+end = (3, 0)
+maxdepth = 13
+goal = 30
 
-step(vault, travel, [(0, 3)], 1, 13)
+step(vault, travel, start, end, maxdepth, goal)
