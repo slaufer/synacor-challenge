@@ -2,20 +2,6 @@
 from time import time
 from operator import mul, sub, add
 
-# path_weight - finds the weight on a path
-# vault: vault through which to traverse
-# path:  path to follow
-def path_weight(vault, path):
-	(x, y) = path[0]
-	weight = vault[y][x]
-
-	for i in range(2, len(path), 2):
-		(x, y) = path[i]
-		(ox, oy) = path[i-1]
-		weight = vault[oy][ox](weight, vault[y][x])
-
-	return weight
-
 # path_string - converts a list of path tuples to a string of north/south/east/west directions
 # path: list of (x, y) tuples
 def path_string(path):
@@ -24,15 +10,15 @@ def path_string(path):
 
 	for pos in path[1:]:
 		(lx, ly) = last
-		(px, py) = pos
+		(x, y) = pos
 
-		if px > lx:
+		if x > lx:
 			text += "east "
-		elif px < lx:
+		elif x < lx:
 			text += "west "
-		elif py < ly:
+		elif y < ly:
 			text += "north "
-		elif py > ly:
+		elif y > ly:
 			text += "south "
 
 		last = pos
@@ -50,12 +36,13 @@ def path_string(path):
 # goal:     desired value at end position
 def step(vault, travel, start, end, maxdepth, goal):
 	paths = []
-	stack = [[start]]
+	(x,y) = start
+	stack = [(0, [start])]
 	visited = 0
 
 	while stack:
-		visited += 1
-		path = stack.pop()
+		# grab the next path on the stack
+		(weight, path) = stack.pop()
 		pos = path[-1]
 		(x, y) = pos
 
@@ -65,8 +52,13 @@ def step(vault, travel, start, end, maxdepth, goal):
 
 		# odd path lengths should always put you in a numeric literal room, so check the status of the path
 		if len(path) & 1 == 1:
-			# get path weight
-			weight = path_weight(vault, path)
+			# update path weight
+			if len(path) > 1:
+				# find the previous operator (if any) and apply it
+				(ox, oy) = path[-2]
+				weight = vault[oy][ox](weight, vault[y][x])
+			else:
+				weight = vault[y][x]
 
 			# paths with negative weights fail
 			if weight < 0:
@@ -80,12 +72,12 @@ def step(vault, travel, start, end, maxdepth, goal):
 
 				continue
 
-		# if this is the deepest we can go, move on
+		# if this is the deepest we can go, stop this branch
 		if len(path) >= maxdepth:
 			continue
 
-		# if this path hasn't been cut short yet, queue its children
-		stack += [path + [(x+dx, y+dy)] for (dx, dy) in travel if x+dx in range(0, len(vault)) and y+dy in range(0, len(vault[0]))]
+		# if this branch hasn't been stopped, queue its children
+		stack += [(weight, path + [(x+dx, y+dy)]) for (dx, dy) in travel if x+dx in range(0, len(vault)) and y+dy in range(0, len(vault[0]))]
 
 	return (visited, paths)
 
@@ -101,13 +93,16 @@ end = (3, 0)
 maxdepth = 15
 goal = 30
 
+total = 0
 for i in range(1, maxdepth + 1, 2):
 	print('##### Scanning up to {:n} steps #####'.format(i))
 
 	begin = time()
 	(visited, paths) = step(vault, travel, start, end, i, goal)
 	elapsed = time() - begin
-	print('### {:n} nodes visited in {:n} seconds, {:n} results'.format(visited, elapsed, len(paths)))
+	total += elapsed	
+
+	print('### {:n} nodes visited in {:n} seconds ({:n} total), {:n} results'.format(visited, elapsed, total, len(paths)))
 
 	for path in paths:
 		print('{:n}: {:s}'.format(len(path), path_string(path)))
