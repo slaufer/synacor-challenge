@@ -1,33 +1,39 @@
 #!/usr/bin/perl
 use strict;
 use warnings;
-use List::MoreUtils qw( any );
-use Data::Dumper;
 no warnings 'recursion';
-$| = 1;
 
 sub verify {
 	my ($arg0, $arg1, $seed, $cache) = @_;
 
-	my $this_call = "$arg0+$arg1";
-	if (defined $cache->{$this_call}) {
-		return $cache->{$this_call};
+	my $this_call = $arg0 . ',' . $arg1;
+
+	my $cached = $cache->{$this_call};
+	if ($cached) {
+		return $cached;
 	}
 	
-	if ($arg0 == 0) {
-		return ($cache->{$this_call} = ($arg1 + 1) % 32768);
+	if (!$arg0) {
+		$arg0 = ($arg1 + 1) % 32768;
+		$cache->{$this_call} = $arg0;
+		return $arg0;
 	}
 
-	if ($arg1 == 0) {
-		return ($cache->{$this_call} = verify(($arg0 + 32767) % 32768, $seed, $seed, $cache));
+	if (!$arg1) {
+		$arg0 = ($arg0 + 32767) % 32768;
+		$arg0 = verify($arg0, $seed, $seed, $cache);
+		$cache->{$this_call} = $arg0;
+		return $arg0;
 	}
 
-	$arg1 = verify($arg0, ($arg1 + 32767) % 32768, $seed, $cache);
-	return ($cache->{$this_call} = verify(($arg0 + 32767) % 32768, $arg1, $seed, $cache));
+	$arg1 = ($arg1 + 32767) % 32768;
+	$arg1 = verify($arg0, $arg1, $seed, $cache);
+	$arg0 = ($arg0 + 32767) % 32768;
+	$arg0 = verify($arg0, $arg1, $seed, $cache);
+	$cache->{$this_call} = $arg0;
+	return $arg0;
 }
 
-my $start = time;
-
-for (my $i = 0; $i < 32768; $i++) {
-	printf "[%d] %d => %d\n", time - $start, $i, verify(4, 1, $i, {});
+for (my $i = 25000; $i < 32768; $i++) {
+	printf "%d => %d\n", $i, verify(4, 1, $i, {});
 }

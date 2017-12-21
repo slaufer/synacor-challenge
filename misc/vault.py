@@ -90,7 +90,7 @@ vault = [
 travel = [(-1, 0), (1, 0), (0, -1), (0, 1)]
 start = (0, 3)
 end = (3, 0)
-maxdepth = 15
+maxdepth = 25
 goal = 30
 
 total = 0
