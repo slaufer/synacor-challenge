@@ -1,88 +1,62 @@
 #!/usr/bin/perl
 use strict;
 use warnings;
-no warnings 'recursion';
-
-sub verify {
-	my ($arg0, $arg1, $seed, $cache) = @_;
-
-	my $this_call = $arg0 . ',' . $arg1;
-
-	my $cached = $cache->{$this_call};
-	if ($cached) {
-		return $cached;
-	}
-	
-	if (!$arg0) {
-		$arg0 = ($arg1 + 1) % 32768;
-		$cache->{$this_call} = $arg0;
-		return $arg0;
-	}
-
-	if (!$arg1) {
-		$arg0 = ($arg0 + 32767) % 32768;
-		$arg0 = verify($arg0, $seed, $seed, $cache);
-		$cache->{$this_call} = $arg0;
-		return $arg0;
-	}
-
-	$arg1 = ($arg1 + 32767) % 32768;
-	$arg1 = verify($arg0, $arg1, $seed, $cache);
-	$arg0 = ($arg0 + 32767) % 32768;
-	$arg0 = verify($arg0, $arg1, $seed, $cache);
-	$cache->{$this_call} = $arg0;
-	return $arg0;
-}
 
 sub verify2 {
 	my ($seed0, $seed1, $seed2) = @_;
-	my @stack = ($seed0.','.$seed1, $seed0, $seed1, 0, 0);
+
 	my %cache;
+	my @stack = ($seed0, $seed1, $seed0.','.$seed1, 0, 0);
+	my $sp = 5;
 
-	my $rv;
+	while ($sp > 1) {
+		# grab the stack frame for this iteration
+		$sp -= 5;
+		my ($arg0, $arg1, $hash, $state, $rv) = @stack[$sp..$sp+4];
 
-	while (@stack >= 5) {
-		my ($hash, $arg0, $arg1, $state, $rv) = splice(@stack, -5, 5);
-
-		# continuation of if clauses
+		# continuation for calls that return immediately after
 		if ($state == 1) {
 			$cache{$hash} = $rv;
-			push @stack, $rv;
+			$stack[$sp++] = $rv;
 			next;
 		}
 
+		# continuation for lower section
 		if ($state == 2) {
-			$arg1 = $rv;
 			$arg0 = ($arg0 + 32767) % 32768;
-			push @stack, ($hash, $arg0, $arg1, 1); # push self onto stack
-			push @stack, ($arg0.','.$arg1, $arg0, $arg1, 0, 0); # push new frame onto stack
+
+			@stack[$sp..$sp+8] = ($arg0, $rv, $hash, 1, # self frame
+				$arg0, $rv, $arg0.','.$rv, 0, 0); # new frame
+			$sp += 9;
 			next;
 		}
 
 		# check cache to see if this call has already been made
 		my $cached = $cache{$hash};
 		if ($cached) {
-			push @stack, $cached;
+			$stack[$sp++] = $cached;
 			next;
 		}
 
 		if ($arg0 == 0) {
 			$arg0 = ($arg1 + 1) % 32768;
 			$cache{$hash} = $arg0;
-			push @stack, $arg0; 
+			$stack[$sp++] = $arg0;
 			next;
 		}
 
 		if ($arg1 == 0) {
 			$arg0 = ($arg0 + 32767) % 32768;
-			push @stack, ($hash, $arg0, $arg1, 1); # push self onto stack
-			push @stack, ($arg0.','.$seed2, $arg0, $seed2, 0, 0); # push new frame onto stack
+			@stack[$sp..$sp+8] = ($arg0, $arg1, $hash, 1, # push self onto stack
+				$arg0, $seed2, $arg0.','.$seed2, 0, 0); # push new frame onto stack
+			$sp += 9;
 			next;
 		}
 
 		$arg1 = ($arg1 + 32767) % 32768;
-		push @stack, ($hash, $arg0, $arg1, 2); # push self onto stack
-		push @stack, ($arg0.','.$arg1, $arg0, $arg1, 0, 0); # push new frame onto stack
+		@stack[$sp..$sp+8] = ($arg0, $arg1, $hash, 2, # push self onto stack
+			$arg0, $arg1, $arg0.','.$arg1, 0, 0); # push new frame onto stack
+		$sp += 9;
 	}
 
 	return $stack[0];
