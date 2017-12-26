@@ -34,6 +34,6 @@ sub verify {
 	return $arg0;
 }
 
-for (my $i = 25000; $i < 32768; $i++) {
+for (my $i = 1; $i < 10; $i++) {
 	printf "%d => %d\n", $i, verify(4, 1, $i, {});
 }
