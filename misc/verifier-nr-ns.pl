@@ -6,13 +6,13 @@ sub verify2 {
 	my ($seed0, $seed1, $seed2) = @_;
 
 	my %cache;
-	my @stack = ($seed0, $seed1, $seed0.','.$seed1, 0, 0);
+	my @stack = ($seed1, $seed0, $seed0.','.$seed1, 0, 0);
 	my $sp = 5;
 
 	while ($sp > 1) {
 		# grab the stack frame for this iteration
-		$sp -= 5;
-		my ($arg0, $arg1, $hash, $state, $rv) = @stack[$sp..$sp+4];
+		$sp -= 3;
+		my ($hash, $state, $rv) = @stack[$sp..$sp+2];
 
 		# continuation for calls that return immediately after
 		if ($state == 1) {
@@ -21,15 +21,20 @@ sub verify2 {
 			next;
 		}
 
+		my $arg0 = $stack[--$sp];
+
 		# continuation for lower section
 		if ($state == 2) {
 			$arg0 = ($arg0 + 32767) % 32768;
 
-			@stack[$sp..$sp+8] = ($arg0, $rv, $hash, 1, # self frame
-				$arg0, $rv, $arg0.','.$rv, 0, 0); # new frame
-			$sp += 9;
+			my $newhash = $arg0.','.$rv;
+			@stack[$sp..$sp+6] = ($hash, 1, # self frame
+				$rv, $arg0, $newhash, 0, 0); # new frame
+			$sp += 7;
 			next;
 		}
+
+		my $arg1 = $stack[--$sp];
 
 		# check cache to see if this call has already been made
 		my $cached = $cache{$hash};
@@ -47,16 +52,18 @@ sub verify2 {
 
 		if ($arg1 == 0) {
 			$arg0 = ($arg0 + 32767) % 32768;
-			@stack[$sp..$sp+8] = ($arg0, $arg1, $hash, 1, # push self onto stack
-				$arg0, $seed2, $arg0.','.$seed2, 0, 0); # push new frame onto stack
-			$sp += 9;
+			my $newhash = $arg0.','.$seed2;
+			@stack[$sp..$sp+6] = ($hash, 1, # push self onto stack
+				$seed2, $arg0, $newhash, 0, 0); # push new frame onto stack
+			$sp += 7;
 			next;
 		}
 
 		$arg1 = ($arg1 + 32767) % 32768;
-		@stack[$sp..$sp+8] = ($arg0, $arg1, $hash, 2, # push self onto stack
-			$arg0, $arg1, $arg0.','.$arg1, 0, 0); # push new frame onto stack
-		$sp += 9;
+		my $newhash = $arg0.','.$arg1;
+		@stack[$sp..$sp+7] = ($arg0, $hash, 2, # push self onto stack
+			$arg1, $arg0, $newhash, 0, 0); # push new frame onto stack
+		$sp += 8;
 	}
 
 	return $stack[0];
